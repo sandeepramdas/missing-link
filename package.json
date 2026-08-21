@@ -1,0 +1,29 @@
+{
+  "name": "missing-link",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Missing Link: Carving Through the Sahyadris — scroll-driven Three.js construction experience (Mumbai–Pune Expressway Missing Link, Navayuga Engineering Package 1)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/verify-gate.mjs && tsc --noEmit && vite build",
+    "build:staging": "tsc --noEmit && vite build --mode staging",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "verify-gate": "node scripts/verify-gate.mjs"
+  },
+  "dependencies": {
+    "gsap": "^3.12.7",
+    "lenis": "^1.1.20",
+    "three": "^0.169.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/three": "^0.169.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "lil-gui": "^0.19.2",
+    "stats.js": "^0.17.0",
+    "@types/stats.js": "^0.17.3"
+  }
+}
