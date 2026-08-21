@@ -24,6 +24,7 @@ import { hudStore, track } from './HUDBridge';
 import { Terrain } from '../world/Terrain';
 import { Sky } from '../world/Sky';
 import { buildVegetation } from '../world/Vegetation';
+import { Portalworks } from '../world/Portals';
 import { GPUParticles } from '../particles/GPUParticles';
 import type { BuildCtx, Section } from '../sections/types';
 import { TOTAL_CH_M } from '../world/Alignment';
@@ -89,6 +90,7 @@ export class SceneDirector {
   private hemi: HemisphereLight;
   private sky!: Sky;
   private vegetation!: import('three').InstancedMesh;
+  private portalworks!: Portalworks;
   private fog: FogExp2;
   private moodCurrent: Mood = { ...MOODS.monsoon };
   private lastTime = 0;
@@ -132,6 +134,9 @@ export class SceneDirector {
     this.vegetation = buildVegetation(reducedMotion ? 500 : 700);
     this.vegetation.visible = false; // grows in once the massif has formed
     this.scene.add(this.vegetation);
+
+    this.portalworks = new Portalworks();
+    this.scene.add(this.portalworks.group);
 
     this.particles = new GPUParticles(this.quality.particleScale);
     this.scene.add(this.particles.group);
@@ -181,6 +186,8 @@ export class SceneDirector {
     // trees sit at final terrain height — showing them mid-morph leaves them
     // floating over the flat contour map
     this.vegetation.visible = this.terrain.morph > 0.93;
+    // persistent corridor anchors: portals + draped tunnel route guide
+    this.portalworks.update(this.t);
 
     let active: Section | null = null;
     for (const s of this.sections) {

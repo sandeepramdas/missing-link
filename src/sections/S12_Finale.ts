@@ -54,6 +54,7 @@ export const S12_Finale: Section = {
     }
 
     pylonBeacon = box(0.6, 0.6, 0.6, new MeshBasicMaterial({ color: PALETTE.sodiumAmber }), PYLON_X, 14.8, 0);
+    pylonBeacon.visible = false; // zero state — lit only during the finale dusk
     pylonLight = new PointLight(PALETTE.sodiumAmber, 0, 200, 1.2);
     pylonLight.position.set(PYLON_X, 15, 0);
     g.add(pylonBeacon, pylonLight);
@@ -75,6 +76,7 @@ export const S12_Finale: Section = {
     traffic.count = Math.floor(N_VEHICLES * window01(localT, 0.05, 0.35));
     // pylon lights up as dusk falls in the last third
     const dusk = window01(localT, 0.6, 0.95);
+    pylonBeacon.visible = dusk > 0.02;
     pylonLight.intensity = 60 * dusk;
     (pylonBeacon.material as MeshBasicMaterial).color.setHex(
       dusk > 0.05 ? PALETTE.sodiumAmber : 0x555555

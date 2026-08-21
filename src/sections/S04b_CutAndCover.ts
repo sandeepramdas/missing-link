@@ -25,8 +25,8 @@ export const S04b_CutAndCover: Section = {
   range: [0, 0],
   cameraTrack: [
     { t: 0, pos: [4, 10.5, 2.2], look: [30, 9.5, 2.2], fov: 34 },
-    { t: 0.25, pos: [-8, 30, 36], look: [CX, 8, 0], fov: 50 },
-    { t: 0.65, pos: [6, 24, 26], look: [CX, 8, 0], fov: 46, calm: true },
+    { t: 0.25, pos: [-16, 40, 52], look: [CX, 8, 0], fov: 50 },
+    { t: 0.65, pos: [-8, 30, 40], look: [CX + 4, 8, 0], fov: 46, calm: true },
     { t: 1, pos: [170, 50, 140], look: [238, 10, 84], fov: 52 },
   ],
   build(_ctx: BuildCtx): Group {

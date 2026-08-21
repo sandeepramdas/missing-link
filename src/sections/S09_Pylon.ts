@@ -64,6 +64,8 @@ export const S09_Pylon: Section = {
       box(4, 1.6, 6.2, mat.machine, PYLON_X + 2, ROAD_Y + 1.4, 0),
       box(4, 1.6, 6.2, mat.machine, PYLON_X - 2, ROAD_Y + 1.4, 0),
     ];
+    // persistent section ⇒ must BUILD in zero state; update() shows them
+    travelers[0].visible = travelers[1].visible = false;
     g.add(...travelers);
 
     // stay cables: 2 points per cable (grey-box straight lines; the

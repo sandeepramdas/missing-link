@@ -22,7 +22,15 @@ import {
 } from 'three';
 import { fbm2 } from '../utils/noise';
 import { mat, PALETTE } from '../materials/greybox';
-import { SPANS, VALLEY_FLOOR_Y, ROAD_Y, VIADUCT_1, VIADUCT_2 } from './Alignment';
+import {
+  SPANS,
+  VALLEY_FLOOR_Y,
+  ROAD_Y,
+  VIADUCT_1,
+  VIADUCT_2,
+  TUNNEL_SHORT,
+  TUNNEL_LONG,
+} from './Alignment';
 
 const SIZE_X = 1700;
 const SIZE_Z = 900;
@@ -61,12 +69,20 @@ export function heightAt(x: number, z: number): number {
   // terrain instead of clipping the slope as a floating disc)
   const dl = Math.hypot(x - LAKE.x, z - LAKE.z);
   if (dl < LAKE.r * 1.8) h = Math.min(h, LAKE.y - 2.2 + Math.pow(dl / LAKE.r, 2) * 4);
-  // Approach corridors stay near road level around z≈0
-  for (const s of SPANS) {
-    if (s.kind !== 'approach') continue;
-    if (x >= s.x0 - 30 && x <= s.x1 + 30 && Math.abs(z) < 26) {
-      const k = 1 - Math.min(1, Math.abs(z) / 26);
-      h = h * (1 - k) + (ROAD_Y - 0.8) * k;
+  // Approach corridors stay near road level around z≈0 — but the carve must
+  // STOP at the portal face so the massif rises exactly where the tunnel
+  // mouths are (a carve running into the tunnel span leaves the portal
+  // headwall standing free in front of the hillside)
+  const inTunnel =
+    (x > TUNNEL_SHORT.x0 + 1 && x < TUNNEL_SHORT.x1 - 1) ||
+    (x > TUNNEL_LONG.x0 + 1 && x < TUNNEL_LONG.x1 - 1);
+  if (!inTunnel) {
+    for (const s of SPANS) {
+      if (s.kind !== 'approach') continue;
+      if (x >= s.x0 - 30 && x <= s.x1 + 30 && Math.abs(z) < 26) {
+        const k = 1 - Math.min(1, Math.abs(z) / 26);
+        h = h * (1 - k) + (ROAD_Y - 0.8) * k;
+      }
     }
   }
   return h;

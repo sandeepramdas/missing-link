@@ -17,7 +17,6 @@ let excSlots: InstanceSlot[] = [];
 let bolts: ReturnType<typeof makeInstanced>;
 let boltSlots: InstanceSlot[] = [];
 let shotcrete: Mesh;
-let portalFrame: Group;
 
 export const S04_Portals: Section = {
   id: 'S04',
@@ -25,17 +24,18 @@ export const S04_Portals: Section = {
   range: [0, 0],
   cameraTrack: [
     { t: 0, pos: [120, 60, 120], look: [PX, 20, 0], fov: 50 },
-    { t: 0.5, pos: [-20, 34, 60], look: [PX + 4, 14, 0], fov: 44 },
-    { t: 0.9, pos: [-6, 14, 26], look: [PX + 2, 10, 0], fov: 38, calm: true },
-    { t: 1, pos: [4, 10.5, TUBE_OFFSET_Z], look: [PX + 30, 9.5, TUBE_OFFSET_Z], fov: 34 },
+    { t: 0.5, pos: [-46, 58, 96], look: [PX + 6, 16, 0], fov: 48 },
+    { t: 0.9, pos: [-26, 34, 52], look: [PX + 2, 12, 0], fov: 42, calm: true },
+    { t: 1, pos: [2, 10.5, TUBE_OFFSET_Z], look: [PX + 30, 9.5, TUBE_OFFSET_Z], fov: 34 },
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();
-    // five bench layers stacked against the hillside — excavation removes top-down
+    // five bench layers stacked against the hillside — excavation removes
+    // top-down; proportioned to the portal headwall (≈65 m tall face)
     benches = [];
     for (let i = 0; i < 5; i++) {
-      const w = 30 - i * 3;
-      const b = box(w, 4.5, 34 - i * 4, mat.rock, PX + w / 2, ROAD_Y + 20 - i * 4.5, 0);
+      const w = 20 - i * 2.4;
+      const b = box(w, 3.2, 22 - i * 2.5, mat.rock, PX + w / 2, ROAD_Y + 14.5 - i * 3.2, 0);
       benches.push(b);
       g.add(b);
     }
@@ -47,15 +47,15 @@ export const S04_Portals: Section = {
     excavators = makeInstanced(GEO.unitBox, mat.machine, excSlots);
     g.add(excavators);
 
-    // slope stabilization bolts above the portal
+    // slope stabilization bolts above the portal, within the cut face
     boltSlots = [];
     for (let i = 0; i < 60; i++) {
       const row = Math.floor(i / 12);
       const colI = i % 12;
       boltSlots.push({
-        x: PX + 2 + row * 1.5,
-        y: ROAD_Y + 6 + row * 3.2,
-        z: -11 + colI * 2,
+        x: PX + 1.5 + row * 1.2,
+        y: ROAD_Y + 5 + row * 2.2,
+        z: -7 + colI * 1.27,
         sx: 1, sy: 2.2, sz: 1,
         order: i / 59,
       });
@@ -63,15 +63,11 @@ export const S04_Portals: Section = {
     bolts = makeInstanced(GEO.bolt, mat.steel, boltSlots);
     g.add(bolts);
 
-    shotcrete = box(0.8, 18, 30, new MeshLambertMaterial({ color: 0x7d7d84, transparent: true, opacity: 0 }), PX + 0.5, ROAD_Y + 10, 0);
+    shotcrete = box(0.6, 9, 15, new MeshLambertMaterial({ color: 0x7d7d84, transparent: true, opacity: 0 }), PX + 0.5, ROAD_Y + 6.5, 0);
     g.add(shotcrete);
 
-    portalFrame = new Group();
-    for (const zc of [TUBE_OFFSET_Z, -TUBE_OFFSET_Z]) {
-      portalFrame.add(box(2, 4.2, 3.6, mat.concrete, PX - 1, ROAD_Y + 1.6, zc));
-    }
-    portalFrame.scale.setScalar(1e-4);
-    g.add(portalFrame);
+    // (the portal structure itself lives in world/Portals.ts — persistent —
+    // and reveals during this section's window; S4 owns only the excavation)
 
     // fill light — the portal face looks away from the sun (backlit slope)
     const fill = new PointLight(0xdfe6ea, 30, 110, 1.6);
@@ -90,7 +86,5 @@ export const S04_Portals: Section = {
     revealInstances(excavators, excSlots, window01(localT, 0.08, 0.3), { spread: 0.4, overshoot: true });
     revealInstances(bolts, boltSlots, window01(localT, 0.5, 0.8), { spread: 0.25 });
     (shotcrete.material as MeshLambertMaterial).opacity = 0.9 * window01(localT, 0.6, 0.85);
-    const frame = easeOutCubic(window01(localT, 0.75, 0.95));
-    portalFrame.scale.setScalar(Math.max(1e-4, frame));
   },
 };
