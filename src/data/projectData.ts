@@ -80,7 +80,8 @@ export const projectData = {
       false,
       '⟨VERIFY — reported first for Indian road tunnels⟩'
     ),
-    breakthroughDate: fact('⟨VERIFY⟩', false, 'per-tube breakthrough dates'),
+    // display value stays neutral; the ⟨VERIFY⟩ badge itself flags the gap
+    breakthroughDate: fact('date pending', false, 'per-tube breakthrough dates ⟨VERIFY⟩'),
   },
 
   viaducts: {

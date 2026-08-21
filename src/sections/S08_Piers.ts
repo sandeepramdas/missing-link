@@ -21,6 +21,7 @@ export const S08_Piers: Section = {
   id: 'S08',
   title: 'Rising from the Gorge',
   range: [0, 0],
+  persistent: true,
   cameraTrack: [
     { t: 0, pos: [640, 30, 60], look: [400, 20, 0], fov: 48 },
     { t: 0.4, pos: [380, 70, 170], look: [277, 5, 0], fov: 60, calm: true },

@@ -56,9 +56,10 @@ export function heightAt(x: number, z: number): number {
   h += fbm2(x * 0.008, z * 0.008, 5) * 22;
   h += fbm2(x * 0.03, z * 0.03, 3) * 5;
   if (gorge) h = Math.min(h, VALLEY_FLOOR_Y + Math.abs(z) * 0.06 + fbm2(x * 0.05, z * 0.05, 2) * 1.5);
-  // Lake basin flattens into a bowl
+  // Lake basin flattens into a bowl (wide rim so the water plane sits inside
+  // terrain instead of clipping the slope as a floating disc)
   const dl = Math.hypot(x - LAKE.x, z - LAKE.z);
-  if (dl < LAKE.r * 1.4) h = Math.min(h, LAKE.y - 2 + (dl / LAKE.r) * 3);
+  if (dl < LAKE.r * 1.8) h = Math.min(h, LAKE.y - 2.2 + Math.pow(dl / LAKE.r, 2) * 4);
   // Approach corridors stay near road level around z≈0
   for (const s of SPANS) {
     if (s.kind !== 'approach') continue;
@@ -112,7 +113,7 @@ export class Terrain {
     this.contours.visible = k < 0.95;
     (this.contours.material as LineBasicMaterial).opacity = 1 - k;
     this.lake.visible = k > 0.85;
-    this.lake.position.y = LAKE.y * Math.max(0.01, k);
+    this.lake.position.y = (LAKE.y - 0.7) * Math.max(0.01, k);
   }
 
   dispose(): void {

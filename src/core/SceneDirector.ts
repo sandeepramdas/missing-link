@@ -65,17 +65,16 @@ export class SceneDirector {
   t = 0;
 
   private sections: Section[] = [];
+  private groups = new Map<string, { group: import('three').Group; persistent: boolean }>();
   private activeId = '';
   private scroll: ScrollEngine;
   private sun: DirectionalLight;
   private hemi: HemisphereLight;
   private fog: FogExp2;
-  private canvas: HTMLCanvasElement;
   private moodCurrent: Mood = { ...MOODS.monsoon };
   private lastTime = 0;
 
   constructor(canvas: HTMLCanvasElement, scroll: ScrollEngine, reducedMotion: boolean) {
-    this.canvas = canvas;
     this.scroll = scroll;
     this.renderer = new WebGLRenderer({
       canvas,
@@ -100,7 +99,11 @@ export class SceneDirector {
     this.sun = new DirectionalLight(0xfff2e0, 1.6);
     this.sun.position.set(400, 500, 300);
     this.hemi = new HemisphereLight(0xbfd0da, 0x3a3a3e, 0.8);
-    this.scene.add(this.sun, this.hemi);
+    // cool rim from the opposite quadrant so slopes facing away from the sun
+    // (both portal faces) never read as black voids
+    const rim = new DirectionalLight(0xbfd0da, 0.55);
+    rim.position.set(-320, 220, -180);
+    this.scene.add(this.sun, this.hemi, rim);
 
     this.terrain = new Terrain();
     this.scene.add(this.terrain.group);
@@ -126,7 +129,11 @@ export class SceneDirector {
 
   addSections(sections: Section[]): void {
     this.sections = sections;
-    for (const s of sections) this.scene.add(s.build(this.ctx));
+    for (const s of sections) {
+      const group = s.build(this.ctx);
+      this.scene.add(group);
+      this.groups.set(s.id, { group, persistent: !!s.persistent });
+    }
     this.scroll.registerSections(sections.map((s) => ({ id: s.id, t: s.range[0] })));
   }
 
@@ -156,6 +163,13 @@ export class SceneDirector {
         const localT = clamp01((this.t - t0) / (t1 - t0));
         s.update(localT, dt, this.ctx);
         if (isActive && !active) active = s;
+      }
+      // lifecycle: non-persistent stages (machinery, survey gear) unload
+      // outside their neighbourhood; built infrastructure stays
+      const entry = this.groups.get(s.id);
+      if (entry) {
+        entry.group.visible =
+          entry.persistent || (this.t >= t0 - 0.06 && this.t < t1 + 0.06);
       }
     }
     // past the final range boundary, keep the last section live
@@ -203,11 +217,10 @@ export class SceneDirector {
     const buildStart = this.sections.find((s) => s.id === BUILD_START_ID)?.range[0] ?? 0.15;
     const buildEnd = this.sections.find((s) => s.id === BUILD_END_ID)?.range[1] ?? 0.92;
     const pb = clamp01((this.t - buildStart) / (buildEnd - buildStart));
-    // corporate hand-off fade over the last 2% of the timeline
-    const fade = 1 - clamp01((this.t - 0.985) / 0.015);
-    if (Math.abs(fade - hudStore.getState().webglFade) > 0.01) {
-      this.canvas.style.opacity = String(0.15 + 0.85 * fade);
-    }
+    // Corporate hand-off: the canvas NEVER dims (the golden hero must hold
+    // full strength to the last pixel) — #corporate simply scrolls over it.
+    // Only the HUD chrome fades, right at the very end.
+    const fade = 1 - clamp01((this.t - 0.997) / 0.003);
     hudStore.getState().setFrame({
       t: this.t,
       sectionId,

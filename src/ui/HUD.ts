@@ -37,6 +37,8 @@ interface StatRow {
 
 export class HUD {
   private root: HTMLElement;
+  private card: HTMLElement;
+  private chipTrack: HTMLElement;
   private kicker: HTMLElement;
   private title: HTMLElement;
   private body: HTMLElement;
@@ -69,8 +71,14 @@ export class HUD {
     chevron.innerHTML = '<span></span><span></span>';
     this.hero.append(heroKicker, heroTitle, heroSub, chevron);
 
-    // ── stat card (top-left) ──────────────────────────────────────────
-    const card = h('aside', 'hud-card');
+    // ── brand mark (top-right, persistent) ────────────────────────────
+    const brand = h('div', 'hud-brand');
+    brand.innerHTML =
+      '<span class="hud-brand-name">NAVAYUGA ENGINEERING</span><span class="hud-brand-sub">MSRDC · MISSING LINK</span>';
+
+    // ── stat card (top-left; hidden during the hero) ──────────────────
+    const card = h('aside', 'hud-card is-hidden');
+    this.card = card;
     this.kicker = h('div', 'hud-kicker');
     this.title = h('h2', 'hud-title');
     this.body = h('p', 'hud-body');
@@ -108,6 +116,7 @@ export class HUD {
       this.chips.set(scene.id, chip);
     }
     rail.append(this.chainageEl, chipTrack);
+    this.chipTrack = chipTrack;
 
     // ── S5 meters panel + twin-tube schematic (bottom-right) ──────────
     this.metersPanel = h('aside', 'hud-meters');
@@ -127,7 +136,7 @@ export class HUD {
     this.metersPanel.append(mLabel, this.metersEl, schematic);
     this.metersPanel.style.display = 'none';
 
-    this.root.append(this.hero, card, prog, rail, this.metersPanel);
+    this.root.append(this.hero, brand, card, prog, rail, this.metersPanel);
     mount.append(this.root);
 
     hudStore.subscribe((s) => this.onFrame(s.sectionId, s.percentBuilt, s.chainage_m, s.metersAdvanced, s.t, s.webglFade));
@@ -168,7 +177,19 @@ export class HUD {
     const copy = sceneCopyById.get(id);
     if (!copy) return;
     this.metersPanel.style.display = id === 'S05' ? '' : 'none';
-    for (const [cid, chip] of this.chips) chip.classList.toggle('is-active', cid === id);
+    // the hero overlay owns S00 — the card would collide with the title
+    this.card.classList.toggle('is-hidden', id === 'S00');
+    for (const [cid, chip] of this.chips) {
+      const isActive = cid === id;
+      chip.classList.toggle('is-active', isActive);
+      if (isActive) {
+        // keep the active chip centred in the (horizontally scrollable) rail
+        this.chipTrack.scrollTo({
+          left: chip.offsetLeft - this.chipTrack.clientWidth / 2 + chip.clientWidth / 2,
+          behavior: 'smooth',
+        });
+      }
+    }
 
     this.kicker.textContent = copy.kicker;
     this.title.textContent = copy.title;
@@ -206,9 +227,10 @@ export class HUD {
       this.statList.append(dt, dd);
       this.statRows.push(row);
     }
-    // stat card entrance — expo.out, transform only (no layout shift)
+    // stat entrance — expo.out, transform only, on the list (never the card:
+    // an inline opacity there would fight the S00 is-hidden state)
     gsap.fromTo(
-      this.statList.parentElement,
+      this.statList,
       { y: 14, opacity: 0.4 },
       { y: 0, opacity: 1, duration: 0.6, ease: 'expo.out', overwrite: true }
     );

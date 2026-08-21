@@ -23,6 +23,14 @@ export interface Section {
   title: string;
   /** normalized t window on the master timeline (assigned by the registry) */
   range: [number, number];
+  /**
+   * Persistent sections leave their built output in the world for later
+   * scenes (piers, deck, pylon, surfacing, alignment). Non-persistent
+   * sections (machinery, survey gear, scaffolding) are hidden by the
+   * SceneDirector once the camera is more than a neighbour-window away —
+   * construction equipment must never appear in the finale.
+   */
+  persistent?: boolean;
   /** camera keyframes in local t (0..1 within the section window) */
   cameraTrack: CamKey[];
   /** create objects; called once at boot (grey-box: everything procedural) */

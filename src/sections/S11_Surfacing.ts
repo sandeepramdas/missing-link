@@ -21,6 +21,7 @@ export const S11_Surfacing: Section = {
   id: 'S11',
   title: 'The Final Layer',
   range: [0, 0],
+  persistent: true,
   cameraTrack: [
     { t: 0, pos: [190, 16, 40], look: [240, 9, 0], fov: 44 },
     { t: 0.5, pos: [280, 14, 26], look: [330, 9, 0], fov: 40, calm: true },

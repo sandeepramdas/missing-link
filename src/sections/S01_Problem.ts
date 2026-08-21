@@ -8,6 +8,7 @@ import {
   CatmullRomCurve3,
   Group,
   Line,
+  LineBasicMaterial,
   TubeGeometry,
   Vector3,
   Mesh,
@@ -21,6 +22,7 @@ import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { window01, easeOutCubic } from '../utils/scratch';
 
 let ghatMat: MeshBasicMaterial;
+let ghatLineMat: LineBasicMaterial;
 let vehicles: ReturnType<typeof makeInstanced>;
 let vehicleSlots: InstanceSlot[] = [];
 let ghatCurve: CatmullRomCurve3;
@@ -47,11 +49,13 @@ export const S01_Problem: Section = {
     }
     ghatCurve = new CatmullRomCurve3(pts);
     ghatMat = new MeshBasicMaterial({ color: 0xf26522, transparent: true, opacity: 0 });
-    const tube = new Mesh(new TubeGeometry(ghatCurve, 80, 1.1, 6, false), ghatMat);
+    const tube = new Mesh(new TubeGeometry(ghatCurve, 80, 0.7, 6, false), ghatMat);
     g.add(tube);
 
-    // outline line for legibility at distance
-    const line = new Line(new BufferGeometry().setFromPoints(ghatCurve.getPoints(90)), mat.hazardLine);
+    // outline line for legibility at distance — own material so it fades
+    // with the tube (shared mat.hazardLine is always-opaque)
+    ghatLineMat = new LineBasicMaterial({ color: 0xf26522, transparent: true, opacity: 0 });
+    const line = new Line(new BufferGeometry().setFromPoints(ghatCurve.getPoints(90)), ghatLineMat);
     line.position.y = 0.6;
     g.add(line);
 
@@ -72,7 +76,9 @@ export const S01_Problem: Section = {
   },
   update(localT, _dt, ctx): void {
     ctx.terrain.setMorph(1); // hold full terrain from here on
-    ghatMat.opacity = 0.85 * easeOutCubic(window01(localT, 0.05, 0.3)) * (1 - window01(localT, 0.85, 1) * 0.8);
+    // draw on, then desaturate/hand off completely before S2's reveal
+    ghatMat.opacity = 0.85 * easeOutCubic(window01(localT, 0.05, 0.3)) * (1 - window01(localT, 0.85, 1));
+    ghatLineMat.opacity = ghatMat.opacity;
     revealInstances(vehicles, vehicleSlots, window01(localT, 0.2, 0.55), { spread: 0.3 });
     ctx.particles.scrub('s1_rockfall', window01(localT, 0.45, 0.75));
     ctx.particles.scrub('s1_rain', window01(localT, 0.1, 0.9));

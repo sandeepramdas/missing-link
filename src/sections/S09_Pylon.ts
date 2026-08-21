@@ -35,6 +35,7 @@ export const S09_Pylon: Section = {
   id: 'S09',
   title: 'The Pylon',
   range: [0, 0],
+  persistent: true,
   cameraTrack: [
     { t: 0, pos: [270, 24, 70], look: [PYLON_X, 8, 0], fov: 58 },
     { t: 0.25, pos: [PYLON_X - 16, 6, 22], look: [PYLON_X, 12, 0], fov: 60 }, // heroic low angle

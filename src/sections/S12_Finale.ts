@@ -13,7 +13,7 @@ import { PALETTE } from '../materials/greybox';
 import { _m1, _v1, _q1 } from '../utils/scratch';
 import { Vector3 } from 'three';
 
-const N_VEHICLES = 48;
+const N_VEHICLES = 84;
 const PYLON_X = 316.5;
 let traffic: InstancedMesh;
 let speeds: Float32Array;
@@ -28,12 +28,14 @@ export const S12_Finale: Section = {
   id: 'S12',
   title: 'Ready for the Road Ahead',
   range: [0, 0],
+  persistent: true,
   cameraTrack: [
     { t: 0, pos: [140, 24, 60], look: [260, 10, 0], fov: 48 },
     { t: 0.3, pos: [PYLON_X - 60, 30, 90], look: [PYLON_X + 40, 12, 0], fov: 55 },
-    { t: 0.55, pos: [520, 60, 160], look: [700, 20, 0], fov: 58 },
-    { t: 0.8, pos: [900, 120, 300], look: [660, 20, 0], fov: 62, calm: true },
-    { t: 1, pos: [980, 200, 430], look: [650, 30, 0], fov: 64, calm: true },
+    { t: 0.55, pos: [600, 55, 150], look: [380, 12, 0], fov: 58 },
+    { t: 0.8, pos: [560, 105, 280], look: [PYLON_X + 14, 12, 0], fov: 60, calm: true },
+    // final golden hero: the cable-stayed span carries the frame, massif behind
+    { t: 1, pos: [640, 150, 380], look: [PYLON_X + 4, 14, 0], fov: 62, calm: true },
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();
@@ -64,7 +66,7 @@ export const S12_Finale: Section = {
       let p = (offsets[i] + roll * speeds[i]) % 1;
       if (dir < 0) p = 1 - p;
       const x = p * X_END;
-      _v1.set(x, ROAD_Y + 0.6, lanes[i]);
+      _v1.set(x, ROAD_Y + 1.08, lanes[i]); // seated on the surfaced deck (asphalt top ≈ +0.62)
       _q1.identity();
       _m1.compose(_v1, _q1, SCALE.set(2.4, 0.9, 1.1));
       traffic.setMatrixAt(i, _m1);

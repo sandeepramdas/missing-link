@@ -28,6 +28,7 @@ export const S02_Alignment: Section = {
   id: 'S02',
   title: 'The Missing Link',
   range: [0, 0],
+  persistent: true,
   cameraTrack: [
     { t: 0, pos: [420, 160, 340], look: [650, 20, 0], fov: 55 },
     { t: 0.5, pos: [660, 240, 460], look: [660, 10, 0], fov: 62, calm: true },

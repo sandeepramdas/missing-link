@@ -25,9 +25,9 @@ export const S04b_CutAndCover: Section = {
   range: [0, 0],
   cameraTrack: [
     { t: 0, pos: [4, 10.5, 2.2], look: [30, 9.5, 2.2], fov: 34 },
-    { t: 0.25, pos: [-16, 26, 42], look: [CX, 8, 0], fov: 48 },
-    { t: 0.65, pos: [-4, 18, 30], look: [CX, 8, 0], fov: 44, calm: true },
-    { t: 1, pos: [150, 60, 150], look: [240, 10, 90], fov: 55 },
+    { t: 0.25, pos: [-8, 30, 36], look: [CX, 8, 0], fov: 50 },
+    { t: 0.65, pos: [6, 24, 26], look: [CX, 8, 0], fov: 46, calm: true },
+    { t: 1, pos: [170, 50, 140], look: [238, 10, 84], fov: 52 },
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();
@@ -61,7 +61,8 @@ export const S04b_CutAndCover: Section = {
       });
     }
     yardSegs = makeInstanced(GEO.unitBox, mat.concrete, yardSlots);
-    gantry = box(2, 9, 26, mat.machine, 240, 14, 86);
+    // slim portal gantry crane straddling the yard rows
+    gantry = box(1.2, 5.5, 18, mat.machine, 240, 12.6, 86);
     gantry.scale.setScalar(1e-4);
     const yard = new Group();
     yard.add(yardSegs, gantry);
@@ -85,6 +86,6 @@ export const S04b_CutAndCover: Section = {
     embankment.visible = ek > 0.01;
     revealInstances(yardSegs, yardSlots, window01(localT, 0.68, 0.95), { spread: 0.3, overshoot: true });
     const gk = Math.max(1e-4, easeOutCubic(window01(localT, 0.75, 0.95)));
-    gantry.scale.set(2 * gk, 9 * gk, 26 * gk);
+    gantry.scale.set(1.2 * gk, 5.5 * gk, 18 * gk);
   },
 };
