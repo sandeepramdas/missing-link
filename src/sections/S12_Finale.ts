@@ -30,12 +30,14 @@ export const S12_Finale: Section = {
   range: [0, 0],
   persistent: true,
   cameraTrack: [
-    { t: 0, pos: [140, 24, 60], look: [260, 10, 0], fov: 48 },
-    { t: 0.3, pos: [PYLON_X - 60, 30, 90], look: [PYLON_X + 40, 12, 0], fov: 55 },
-    { t: 0.55, pos: [600, 55, 150], look: [380, 12, 0], fov: 58 },
-    { t: 0.8, pos: [500, 75, 210], look: [PYLON_X + 14, 12, 0], fov: 58, calm: true },
-    // final golden hero: the cable-stayed span carries the frame, massif behind
-    { t: 1, pos: [490, 95, 250], look: [PYLON_X + 4, 13, 0], fov: 58, calm: true },
+    // full end-to-end journey: toll plaza → portal A → bridge → exit portal →
+    // Kusgaon merge → golden hero on the span
+    { t: 0, pos: [-72, 30, 78], look: [-10, 9, 0], fov: 52 }, // Khalapur toll plaza + portal
+    { t: 0.16, pos: [-52, 24, 16], look: [31, 10, 0], fov: 46 }, // near-frontal: twin mouths + road in
+    { t: 0.38, pos: [PYLON_X - 65, 30, 92], look: [PYLON_X + 36, 12, 0], fov: 56 }, // the bridge
+    { t: 0.58, pos: [1170, 26, 80], look: [1243, 10, 0], fov: 50 }, // exit portal, Kusgaon end
+    { t: 0.74, pos: [1315, 42, 130], look: [1250, 11, 0], fov: 52, calm: true }, // merge to the expressway
+    { t: 1, pos: [490, 95, 250], look: [PYLON_X + 4, 13, 0], fov: 58, calm: true }, // golden hero
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();
@@ -66,7 +68,9 @@ export const S12_Finale: Section = {
       const dir = i % 2 === 0 ? 1 : -1;
       let p = (offsets[i] + roll * speeds[i]) % 1;
       if (dir < 0) p = 1 - p;
-      const x = p * X_END;
+      // traffic runs onto the EXISTING expressway at both ends — the tie-in
+      // is only believable if vehicles cross it
+      const x = -95 + p * (X_END + 160 + 95);
       _v1.set(x, ROAD_Y + 1.08, lanes[i]); // seated on the surfaced deck (asphalt top ≈ +0.62)
       _q1.identity();
       _m1.compose(_v1, _q1, SCALE.set(2.4, 0.9, 1.1));

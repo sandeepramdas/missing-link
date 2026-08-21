@@ -25,6 +25,7 @@ import { Terrain } from '../world/Terrain';
 import { Sky } from '../world/Sky';
 import { buildVegetation } from '../world/Vegetation';
 import { Portalworks } from '../world/Portals';
+import { buildTieIns } from '../world/TieIns';
 import { GPUParticles } from '../particles/GPUParticles';
 import type { BuildCtx, Section } from '../sections/types';
 import { TOTAL_CH_M } from '../world/Alignment';
@@ -137,6 +138,8 @@ export class SceneDirector {
 
     this.portalworks = new Portalworks();
     this.scene.add(this.portalworks.group);
+    // the existing expressway at both ends — present from scene zero
+    this.scene.add(buildTieIns());
 
     this.particles = new GPUParticles(this.quality.particleScale);
     this.scene.add(this.particles.group);

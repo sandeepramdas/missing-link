@@ -48,9 +48,17 @@ function massifProfile(x: number): number {
     const mid = (s.x0 + s.x1) / 2;
     const half = (s.x1 - s.x0) / 2;
     const d = Math.abs(x - mid) / (half + 40);
-    const bump = Math.max(0, 1 - d * d);
-    if (s.kind === 'tunnel') h += bump * (s.x1 - s.x0 > 400 ? 54 : 40);
-    if (s.kind === 'viaduct') h -= bump * 26;
+    if (s.kind === 'tunnel') {
+      // mesa profile (flat top, steep flanks) — classic Deccan trap, and it
+      // keeps the rock face TALL right at the portal ends so tunnel mouths
+      // always meet real mountain, not a gentle mound
+      const mesa = Math.max(0, 1 - Math.pow(d, 3.4));
+      h += mesa * (s.x1 - s.x0 > 400 ? 54 : 40);
+    }
+    if (s.kind === 'viaduct') {
+      const bump = Math.max(0, 1 - d * d);
+      h -= bump * 26;
+    }
   }
   return h;
 }
@@ -79,7 +87,9 @@ export function heightAt(x: number, z: number): number {
   if (!inTunnel) {
     for (const s of SPANS) {
       if (s.kind !== 'approach') continue;
-      if (x >= s.x0 - 30 && x <= s.x1 + 30 && Math.abs(z) < 26) {
+      // corridor extends well past the ends so the EXISTING expressway
+      // tie-ins (toll plaza, merge) sit on level ground
+      if (x >= s.x0 - 170 && x <= s.x1 + 170 && Math.abs(z) < 26) {
         const k = 1 - Math.min(1, Math.abs(z) / 26);
         h = h * (1 - k) + (ROAD_Y - 0.8) * k;
       }
