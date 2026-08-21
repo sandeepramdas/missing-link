@@ -10,10 +10,14 @@ import {
   Group,
   InstancedMesh,
   Material,
+  Matrix4,
   Mesh,
   MeshLambertMaterial,
   PlaneGeometry,
+  PointLight,
+  Quaternion,
   SphereGeometry,
+  Vector3,
 } from 'three';
 import { mat } from '../materials/greybox';
 import { ROAD_Y, TUBE_OFFSET_Z } from '../world/Alignment';
@@ -48,8 +52,9 @@ export function cyl(r: number, h: number, m: Material, x = 0, y = 0, z = 0): Mes
   return mesh;
 }
 
-/** Interior tunnel shell (back-side cylinder + floor) for one tube. */
-const tubeInterior = new MeshLambertMaterial({ color: 0x232326, side: BackSide });
+/** Interior tunnel shell (back-side cylinder + floor) for one tube.
+ *  Warm mid-grey, not near-black — work lights must have something to catch. */
+const tubeInterior = new MeshLambertMaterial({ color: 0x4a4642, side: BackSide });
 export function makeTubeShell(x0: number, x1: number, zOffset: number): Group {
   const g = new Group();
   const len = x1 - x0;
@@ -62,6 +67,46 @@ export function makeTubeShell(x0: number, x1: number, zOffset: number): Group {
   floor.position.set(x0 + len / 2, ROAD_Y + 0.02, zOffset);
   g.add(shell, floor);
   return g;
+}
+
+/** Construction string lights: emissive amber blocks along the crown +
+ *  matching point lights every `spacing` — the standard site-lighting look
+ *  that keeps every tunnel beat legible. */
+export function makeStringLights(
+  g: Group,
+  x0: number,
+  x1: number,
+  zOffset: number,
+  spacing = 18,
+  intensity = 22
+): void {
+  const slots: InstanceSlot[] = [];
+  for (let x = x0; x <= x1; x += 6) {
+    slots.push({ x, y: ROAD_Y + 2.2, z: zOffset + 0.9, sx: 0.35, sy: 0.08, sz: 0.14 });
+  }
+  const bulbs = makeInstanced(new BoxGeometry(1, 1, 1), mat.amberEmissive, slots);
+  revealAll(bulbs, slots);
+  g.add(bulbs);
+  for (let x = x0 + spacing / 2; x <= x1; x += spacing) {
+    const l = new PointLight(0xffd9a6, intensity, spacing * 2.4, 1.5);
+    l.position.set(x, ROAD_Y + 2.0, zOffset);
+    g.add(l);
+  }
+}
+
+function revealAll(mesh: InstancedMesh, slots: InstanceSlot[]): void {
+  const m = new Matrix4();
+  const p = new Vector3();
+  const q = new Quaternion();
+  const s = new Vector3();
+  slots.forEach((slot, i) => {
+    p.set(slot.x, slot.y, slot.z);
+    s.set(slot.sx, slot.sy, slot.sz);
+    m.compose(p, q, s);
+    mesh.setMatrixAt(i, m);
+  });
+  mesh.count = slots.length;
+  mesh.instanceMatrix.needsUpdate = true;
 }
 
 /** Twin tubes. */

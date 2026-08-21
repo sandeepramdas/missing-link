@@ -14,6 +14,7 @@ import {
   LineBasicMaterial,
   LineSegments,
   Mesh,
+  MeshLambertMaterial,
   PlaneGeometry,
   BufferGeometry,
   Float32BufferAttribute,
@@ -79,6 +80,11 @@ export class Terrain {
   private baseHeights: Float32Array;
   private morphK = -1;
 
+  /** current contour→massif morph state (0 flat map … 1 full relief) */
+  get morph(): number {
+    return Math.max(0, this.morphK);
+  }
+
   constructor() {
     const geo = new PlaneGeometry(SIZE_X, SIZE_Z, SEG_X, SEG_Z);
     geo.rotateX(-Math.PI / 2);
@@ -88,7 +94,8 @@ export class Terrain {
     for (let i = 0; i < pos.count; i++) {
       this.baseHeights[i] = heightAt(pos.getX(i), pos.getZ(i));
     }
-    this.mesh = new Mesh(geo, mat.terrain);
+    geo.setAttribute('color', buildTerrainColors(pos, this.baseHeights));
+    this.mesh = new Mesh(geo, terrainNaturalMat);
     this.mesh.receiveShadow = true;
 
     this.contours = buildContours();
@@ -121,6 +128,53 @@ export class Terrain {
     this.contours.geometry.dispose();
     this.lake.geometry.dispose();
   }
+}
+
+/** Natural Sahyadri colouring by altitude + slope: monsoon greens on gentle
+ *  ground, exposed basalt on cliffs, plateau grass up high, earthy gorge
+ *  floor. Computed once at build time — the "nature view" of the massif. */
+const terrainNaturalMat = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
+
+function buildTerrainColors(pos: BufferAttribute, heights: Float32Array): Float32BufferAttribute {
+  const colors = new Float32Array(pos.count * 3);
+  const c = { r: 0, g: 0, b: 0 };
+  const mix = (a: [number, number, number], b: [number, number, number], t: number) => {
+    c.r = a[0] + (b[0] - a[0]) * t;
+    c.g = a[1] + (b[1] - a[1]) * t;
+    c.b = a[2] + (b[2] - a[2]) * t;
+  };
+  // palette (linear-ish sRGB triplets)
+  const GREEN_DEEP: [number, number, number] = [0.24, 0.36, 0.2]; // valley forest
+  const GREEN_MID: [number, number, number] = [0.36, 0.5, 0.29]; // hill grass
+  const PLATEAU: [number, number, number] = [0.5, 0.53, 0.36]; // high laterite grass
+  const BASALT: [number, number, number] = [0.36, 0.34, 0.32]; // exposed rock
+  const EARTH: [number, number, number] = [0.42, 0.37, 0.28]; // gorge floor / scree
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    const h = heights[i];
+    // slope via finite difference on the heightfield
+    const dx = heightAt(x + 3, z) - heightAt(x - 3, z);
+    const dz = heightAt(x, z + 3) - heightAt(x, z - 3);
+    const slope = Math.min(1, Math.hypot(dx, dz) / 6);
+
+    if (h < 2) mix(EARTH, GREEN_DEEP, Math.max(0, (h + 4) / 6));
+    else if (h < 24) mix(GREEN_DEEP, GREEN_MID, h / 24);
+    else if (h < 46) mix(GREEN_MID, PLATEAU, (h - 24) / 22);
+    else mix(PLATEAU, PLATEAU, 0);
+    // steep faces expose basalt
+    if (slope > 0.45) {
+      const k = Math.min(1, (slope - 0.45) / 0.35);
+      mix([c.r, c.g, c.b], BASALT, k);
+    }
+    // gentle organic variation
+    const v = 1 + fbm2(x * 0.02, z * 0.02, 3) * 0.18;
+    colors[i * 3] = c.r * v;
+    colors[i * 3 + 1] = c.g * v;
+    colors[i * 3 + 2] = c.b * v;
+  }
+  return new Float32BufferAttribute(colors, 3);
 }
 
 /** Concentric contour rings sampled from the heightfield (grey-box stand-in

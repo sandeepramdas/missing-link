@@ -33,9 +33,9 @@ export const S12_Finale: Section = {
     { t: 0, pos: [140, 24, 60], look: [260, 10, 0], fov: 48 },
     { t: 0.3, pos: [PYLON_X - 60, 30, 90], look: [PYLON_X + 40, 12, 0], fov: 55 },
     { t: 0.55, pos: [600, 55, 150], look: [380, 12, 0], fov: 58 },
-    { t: 0.8, pos: [560, 105, 280], look: [PYLON_X + 14, 12, 0], fov: 60, calm: true },
+    { t: 0.8, pos: [500, 75, 210], look: [PYLON_X + 14, 12, 0], fov: 58, calm: true },
     // final golden hero: the cable-stayed span carries the frame, massif behind
-    { t: 1, pos: [640, 150, 380], look: [PYLON_X + 4, 14, 0], fov: 62, calm: true },
+    { t: 1, pos: [490, 95, 250], look: [PYLON_X + 4, 13, 0], fov: 58, calm: true },
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();

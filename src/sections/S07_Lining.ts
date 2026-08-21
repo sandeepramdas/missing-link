@@ -4,7 +4,7 @@
  */
 import { Group, PointLight, TorusGeometry, InstancedMesh } from 'three';
 import type { BuildCtx, Section } from './types';
-import { GEO, makeInstanced, makeTwinTubes, mat } from './helpers';
+import { GEO, makeInstanced, makeStringLights, makeTwinTubes, mat } from './helpers';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { ROAD_Y, TUBE_OFFSET_Z } from '../world/Alignment';
 import { window01 } from '../utils/scratch';
@@ -58,7 +58,8 @@ export const S07_Lining: Section = {
     doors = makeInstanced(GEO.unitBox, mat.greenEmissive, doorSlots);
     g.add(doors);
 
-    const glow = new PointLight(0xffe6c4, 10, 90, 1.3);
+    makeStringLights(g, X0 - 20, X1 + 30, Z, 44, 30);
+    const glow = new PointLight(0xffe6c4, 30, 110, 1.3);
     glow.position.set((X0 + X1) / 2, ROAD_Y + 2.6, Z);
     g.add(glow);
     return g;

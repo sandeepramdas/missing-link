@@ -6,7 +6,7 @@
  */
 import { Group, Mesh, MeshLambertMaterial, PointLight, CylinderGeometry } from 'three';
 import type { BuildCtx, Section } from './types';
-import { GEO, box, makeInstanced, makeTubeShell, mat, crownSlots } from './helpers';
+import { GEO, box, makeInstanced, makeTubeShell, makeStringLights, mat, crownSlots } from './helpers';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { ROAD_Y, TUBE_OFFSET_Z, TUNNEL_LONG } from '../world/Alignment';
 import { hudStore } from '../core/HUDBridge';
@@ -53,6 +53,8 @@ export const S05_NATM: Section = {
     // so the camera is always INSIDE the bore (back-side shell is invisible
     // from outside)
     stage.add(makeTubeShell(FACE_START - 45, FACE_START + CYCLES * ADV + 2, Z));
+    // site string lighting keeps the whole drive legible
+    makeStringLights(stage, FACE_START - 42, FACE_START + CYCLES * ADV - 4, Z, 16, 26);
     void TUNNEL_LONG;
 
     faceMat = new MeshLambertMaterial({ color: PALETTE.basaltDark, flatShading: true });

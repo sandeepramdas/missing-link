@@ -203,8 +203,12 @@ export class HUD {
       const fact = resolveFact(b.path);
       const dt = h('dt', 'hud-stat-label', b.label);
       const dd = h('dd', 'hud-stat-value hud-mono');
+      // value lives in its OWN span: count-up tweens must never clobber the
+      // ⟨VERIFY⟩ badge node appended after it (AC2 visibility)
+      const val = h('span');
+      dd.append(val);
       const finalText = b.format.replace('{v}', String(fact.value));
-      const row: StatRow = { valueEl: dd, binding: b };
+      const row: StatRow = { valueEl: val, binding: b };
       if (b.countUp && typeof fact.value === 'number') {
         const target = fact.value;
         const width = finalText.length;
@@ -215,13 +219,13 @@ export class HUD {
           duration: 0.7,
           ease: 'expo.out',
           onUpdate: () => {
-            dd.textContent = b.format
+            val.textContent = b.format
               .replace('{v}', proxy.v.toFixed(decimals))
               .padStart(width, ' ');
           },
         });
       } else {
-        dd.textContent = finalText;
+        val.textContent = finalText;
       }
       if (!fact.verified && SHOW_VERIFY) dd.append(verifyBadge());
       this.statList.append(dt, dd);

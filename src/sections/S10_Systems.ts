@@ -6,7 +6,7 @@
  */
 import { Group, InstancedMesh, Mesh, MeshBasicMaterial, PointLight } from 'three';
 import type { BuildCtx, Section } from './types';
-import { GEO, box, cyl, makeInstanced, makeTubeShell, mat } from './helpers';
+import { GEO, box, cyl, makeInstanced, makeStringLights, makeTubeShell, mat } from './helpers';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { ROAD_Y, TUBE_OFFSET_Z } from '../world/Alignment';
 import { window01, clamp01 } from '../utils/scratch';
@@ -96,7 +96,10 @@ export const S10_Systems: Section = {
     scadaGlow.position.set(X1 + 10, ROAD_Y + 1.6, Z + 3);
     g.add(scada, scadaGlow);
 
-    const work = new PointLight(0xffe6c4, 8, 80, 1.4);
+    // dim pre-commissioning string lighting so the fit-out reads before the
+    // sodium cascade takes over
+    makeStringLights(g, X0 - 24, X1 + 40, Z, 48, 16);
+    const work = new PointLight(0xffe6c4, 20, 90, 1.4);
     work.position.set(X0 + 40, ROAD_Y + 2.4, Z);
     g.add(work);
     return g;

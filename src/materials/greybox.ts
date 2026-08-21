@@ -38,7 +38,7 @@ export const mat = {
   amberEmissive: new MeshBasicMaterial({ color: PALETTE.sodiumAmber }),
   orangeEmissive: new MeshBasicMaterial({ color: PALETTE.safetyOrange }),
   greenEmissive: new MeshBasicMaterial({ color: PALETTE.crossPassageGreen }),
-  water: new MeshLambertMaterial({ color: PALETTE.skySteel, transparent: true, opacity: 0.8 }),
+  water: new MeshLambertMaterial({ color: 0x9cc8de, transparent: true, opacity: 0.85 }),
   ghost: new MeshBasicMaterial({ color: PALETTE.basaltLight, transparent: true, opacity: 0.25 }),
   alignmentLine: new LineBasicMaterial({ color: PALETTE.sodiumAmber }),
   hazardLine: new LineBasicMaterial({ color: PALETTE.safetyOrange }),

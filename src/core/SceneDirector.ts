@@ -22,6 +22,8 @@ import { ScrollEngine } from './ScrollEngine';
 import { QualityManager } from './QualityManager';
 import { hudStore, track } from './HUDBridge';
 import { Terrain } from '../world/Terrain';
+import { Sky } from '../world/Sky';
+import { buildVegetation } from '../world/Vegetation';
 import { GPUParticles } from '../particles/GPUParticles';
 import type { BuildCtx, Section } from '../sections/types';
 import { TOTAL_CH_M } from '../world/Alignment';
@@ -29,19 +31,34 @@ import { clamp01, damp, _c1, _c2 } from '../utils/scratch';
 import gsap from 'gsap';
 
 export interface Mood {
-  sky: number;
+  skyTop: number;
+  skyBottom: number;
   fog: number;
+  fogDensity: number;
   exposure: number;
   sunIntensity: number;
   hemiIntensity: number;
 }
 
 const MOODS: Record<string, Mood> = {
-  // monsoon-overcast default (S0–S11)
-  monsoon: { sky: 0x767d84, fog: 0x767d84, exposure: 1.0, sunIntensity: 1.6, hemiIntensity: 0.8 },
-  tunnel: { sky: 0x1a1a1e, fog: 0x141416, exposure: 0.85, sunIntensity: 0.25, hemiIntensity: 0.3 },
-  golden: { sky: 0xd9a05b, fog: 0xc98d4e, exposure: 1.15, sunIntensity: 2.2, hemiIntensity: 0.9 },
-  night: { sky: 0x0d1020, fog: 0x0d1020, exposure: 0.95, sunIntensity: 0.1, hemiIntensity: 0.25 },
+  // bright monsoon daylight — open air, green hills, glowing horizon
+  monsoon: {
+    skyTop: 0x6fa8d6, skyBottom: 0xe8f0f4, fog: 0xd9e6ee, fogDensity: 0.00042,
+    exposure: 1.08, sunIntensity: 2.4, hemiIntensity: 1.05,
+  },
+  // tunnel — dark but LEGIBLE: lifted ambient, murk kept short-range
+  tunnel: {
+    skyTop: 0x15171b, skyBottom: 0x33373d, fog: 0x26282c, fogDensity: 0.0016,
+    exposure: 1.0, sunIntensity: 0.35, hemiIntensity: 0.6,
+  },
+  golden: {
+    skyTop: 0x6d87ad, skyBottom: 0xf6d8a4, fog: 0xeccfa0, fogDensity: 0.00038,
+    exposure: 1.16, sunIntensity: 2.7, hemiIntensity: 0.95,
+  },
+  night: {
+    skyTop: 0x0d1020, skyBottom: 0x2a3050, fog: 0x141830, fogDensity: 0.0006,
+    exposure: 0.95, sunIntensity: 0.1, hemiIntensity: 0.3,
+  },
 };
 
 /** per-section mood key; sections can hand back a blended mood in update via director API later */
@@ -70,6 +87,8 @@ export class SceneDirector {
   private scroll: ScrollEngine;
   private sun: DirectionalLight;
   private hemi: HemisphereLight;
+  private sky!: Sky;
+  private vegetation!: import('three').InstancedMesh;
   private fog: FogExp2;
   private moodCurrent: Mood = { ...MOODS.monsoon };
   private lastTime = 0;
@@ -92,21 +111,27 @@ export class SceneDirector {
     this.rig.reducedMotion = reducedMotion;
     this.scene.add(this.rig.dolly, this.rig.focusTarget);
 
-    this.fog = new FogExp2(0x767d84, 0.0009);
+    this.fog = new FogExp2(0xd9e6ee, 0.00042);
     this.scene.fog = this.fog;
-    this.scene.background = new Color(0x767d84);
+    this.scene.background = new Color(0xd9e6ee); // safety fill behind the dome
+    this.sky = new Sky();
+    this.scene.add(this.sky.mesh);
 
-    this.sun = new DirectionalLight(0xfff2e0, 1.6);
+    this.sun = new DirectionalLight(0xfff4e2, 2.4);
     this.sun.position.set(400, 500, 300);
-    this.hemi = new HemisphereLight(0xbfd0da, 0x3a3a3e, 0.8);
+    // bright sky bounce + green ground bounce — the daylight feel
+    this.hemi = new HemisphereLight(0xdcecf7, 0x55603f, 1.05);
     // cool rim from the opposite quadrant so slopes facing away from the sun
     // (both portal faces) never read as black voids
-    const rim = new DirectionalLight(0xbfd0da, 0.55);
+    const rim = new DirectionalLight(0xcfe0ec, 0.7);
     rim.position.set(-320, 220, -180);
     this.scene.add(this.sun, this.hemi, rim);
 
     this.terrain = new Terrain();
     this.scene.add(this.terrain.group);
+    this.vegetation = buildVegetation(reducedMotion ? 500 : 700);
+    this.vegetation.visible = false; // grows in once the massif has formed
+    this.scene.add(this.vegetation);
 
     this.particles = new GPUParticles(this.quality.particleScale);
     this.scene.add(this.particles.group);
@@ -153,6 +178,9 @@ export class SceneDirector {
     // scrub-robustness: past S01 the massif is always fully formed, even when
     // the user deep-links/seeks and S00's own update never ran
     if (this.t > 0.16) this.terrain.setMorph(1);
+    // trees sit at final terrain height — showing them mid-morph leaves them
+    // floating over the flat contour map
+    this.vegetation.visible = this.terrain.morph > 0.93;
 
     let active: Section | null = null;
     for (const s of this.sections) {
@@ -201,13 +229,18 @@ export class SceneDirector {
     const target = MOODS[SECTION_MOOD[sectionId] ?? 'monsoon'];
     const k = damp(dt * 1.5);
     const m = this.moodCurrent;
+    m.fogDensity += (target.fogDensity - m.fogDensity) * k;
+    this.fog.density = m.fogDensity;
+    _c1.setHex(target.skyTop);
+    _c2.setHex(target.skyBottom);
+    this.sky.lerpTo(_c1, _c2, k);
     m.exposure += (target.exposure - m.exposure) * k;
     m.sunIntensity += (target.sunIntensity - m.sunIntensity) * k;
     m.hemiIntensity += (target.hemiIntensity - m.hemiIntensity) * k;
     this.renderer.toneMappingExposure = m.exposure;
     this.sun.intensity = m.sunIntensity;
     this.hemi.intensity = m.hemiIntensity;
-    _c1.setHex(target.sky);
+    _c1.setHex(target.skyBottom);
     (this.scene.background as Color).lerp(_c1, k);
     _c2.setHex(target.fog);
     this.fog.color.lerp(_c2, k);

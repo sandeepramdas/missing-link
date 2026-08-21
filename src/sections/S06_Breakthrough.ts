@@ -5,7 +5,7 @@
  */
 import { Group, Mesh, MeshBasicMaterial, PointLight, CylinderGeometry, AdditiveBlending } from 'three';
 import type { BuildCtx, Section } from './types';
-import { makeTubeShell } from './helpers';
+import { makeStringLights, makeTubeShell } from './helpers';
 import { ROAD_Y, TUBE_OFFSET_Z } from '../world/Alignment';
 import { window01, easeOutExpo, smoothstep } from '../utils/scratch';
 import { PALETTE } from '../materials/greybox';
@@ -30,6 +30,7 @@ export const S06_Breakthrough: Section = {
   build(ctx: BuildCtx): Group {
     const g = new Group();
     g.add(makeTubeShell(BX - 50, BX + 50, Z));
+    makeStringLights(g, BX - 48, BX - 6, Z, 16, 22);
 
     veil = new Mesh(
       new CylinderGeometry(1.44, 1.44, 0.8, 14),
