@@ -64,19 +64,25 @@ export const S01_Problem: Section = {
     line.position.y = 0.6;
     g.add(line);
 
-    // stalled convoy along the curve — every vehicle seated on the surface
+    // stalled convoy along the curve — seated on the surface AND yawed to
+    // the road direction (axis-aligned boxes on switchbacks read as random
+    // crates, not queued traffic)
     vehicleSlots = [];
     for (let i = 0; i < 26; i++) {
-      const p = ghatCurve.getPoint(0.25 + (i / 26) * 0.5);
+      const ct = 0.25 + (i / 26) * 0.5;
+      const p = ghatCurve.getPoint(ct);
+      const tan = ghatCurve.getTangent(ct);
       vehicleSlots.push({
         x: p.x,
         y: heightAt(p.x, p.z) + 1.35,
         z: p.z,
         sx: 2.6, sy: 1.1, sz: 1.2,
+        ry: Math.atan2(-tan.z, tan.x),
         order: i / 25,
       });
     }
-    vehicles = makeInstanced(GEO.unitBox, mat.machine, vehicleSlots);
+    // steel grey, NOT orange — same-hue vehicles disappear into the road ribbon
+    vehicles = makeInstanced(GEO.unitBox, mat.steel, vehicleSlots);
     g.add(vehicles);
 
     // rockfall + rain emitters (scrub-driven)
