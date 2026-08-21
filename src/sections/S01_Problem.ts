@@ -39,17 +39,22 @@ export const S01_Problem: Section = {
   ],
   build(ctx: BuildCtx): Group {
     const g = new Group();
-    // serpentine ghat descending the flank of the short-tunnel massif (z>0 side)
+    // serpentine ghat descending the flank of the short-tunnel massif (z>0
+    // side). The ribbon must be DRAPED: sample the horizontal serpentine
+    // densely and pin every sample to the terrain surface — a coarse curve
+    // interpolated in 3D dives under the hillside between control points and
+    // renders as disconnected orange fragments.
     const pts: Vector3[] = [];
-    for (let i = 0; i <= 14; i++) {
-      const t = i / 14;
+    const N = 120;
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
       const x = 140 + t * 320 + Math.sin(t * Math.PI * 4) * 46;
       const z = 200 - t * 110;
-      pts.push(new Vector3(x, heightAt(x, z) + 1.2, z));
+      pts.push(new Vector3(x, heightAt(x, z) + 0.9, z));
     }
     ghatCurve = new CatmullRomCurve3(pts);
     ghatMat = new MeshBasicMaterial({ color: 0xf26522, transparent: true, opacity: 0 });
-    const tube = new Mesh(new TubeGeometry(ghatCurve, 80, 0.7, 6, false), ghatMat);
+    const tube = new Mesh(new TubeGeometry(ghatCurve, 240, 0.7, 6, false), ghatMat);
     g.add(tube);
 
     // outline line for legibility at distance — own material so it fades
@@ -59,11 +64,17 @@ export const S01_Problem: Section = {
     line.position.y = 0.6;
     g.add(line);
 
-    // stalled convoy along the curve
+    // stalled convoy along the curve — every vehicle seated on the surface
     vehicleSlots = [];
     for (let i = 0; i < 26; i++) {
       const p = ghatCurve.getPoint(0.25 + (i / 26) * 0.5);
-      vehicleSlots.push({ x: p.x, y: p.y + 0.6, z: p.z, sx: 2.6, sy: 1.1, sz: 1.2, order: i / 25 });
+      vehicleSlots.push({
+        x: p.x,
+        y: heightAt(p.x, p.z) + 1.35,
+        z: p.z,
+        sx: 2.6, sy: 1.1, sz: 1.2,
+        order: i / 25,
+      });
     }
     vehicles = makeInstanced(GEO.unitBox, mat.machine, vehicleSlots);
     g.add(vehicles);
