@@ -1,41 +1,56 @@
 /**
  * TieIns — the EXISTING Mumbai–Pune Expressway at both ends of the new link.
- * Present from scene zero (this road predates the project): pavement running
- * off-map at each end, the Khalapur toll plaza (booth row + canopy), and a
- * merge gantry at the Kusgaon end. Without these, the new corridor floats —
- * nothing to connect to before the first tunnel or after the last one.
+ * Present from scene zero (this road predates the project): pavement with
+ * centreline dashes and pale edge lines running off-map at each end, the
+ * Khalapur toll plaza (booth row + canopy, scaled against the vehicle
+ * fleet), and a merge gantry at the Kusgaon end.
  */
-import { Group } from 'three';
+import { Group, MeshLambertMaterial } from 'three';
 import { box, mat } from '../sections/helpers';
 import { ROAD_Y, X_END } from './Alignment';
+
+const edgeMat = new MeshLambertMaterial({ color: 0xb9b9be });
+
+function roadStrip(g: Group, x0: number, x1: number): void {
+  const len = x1 - x0;
+  const cx = (x0 + x1) / 2;
+  g.add(box(len, 0.24, 5.2, mat.asphalt, cx, ROAD_Y + 0.5, 0));
+  // pale edge lines give the pavement structure at aerial distance
+  for (const s of [1, -1]) {
+    g.add(box(len, 0.05, 0.14, edgeMat, cx, ROAD_Y + 0.64, s * 2.45));
+  }
+  for (let x = x0 + 6; x < x1 - 4; x += 9) {
+    g.add(box(3, 0.05, 0.22, mat.amberEmissive, x, ROAD_Y + 0.64, 0));
+  }
+}
 
 export function buildTieIns(): Group {
   const g = new Group();
 
   // existing expressway pavement, running to the map edges
-  g.add(box(110, 0.24, 5.2, mat.asphalt, -55, ROAD_Y + 0.5, 0));
-  g.add(box(170, 0.24, 5.2, mat.asphalt, X_END + 85, ROAD_Y + 0.5, 0));
-  // centreline dashes read as "live road" even before the new link opens
-  for (let x = -100; x < -8; x += 9) {
-    g.add(box(3, 0.06, 0.25, mat.amberEmissive, x, ROAD_Y + 0.66, 0));
-  }
-  for (let x = X_END + 10; x < X_END + 165; x += 9) {
-    g.add(box(3, 0.06, 0.25, mat.amberEmissive, x, ROAD_Y + 0.66, 0));
-  }
+  roadStrip(g, -110, 0);
+  roadStrip(g, X_END, X_END + 170);
 
-  // ── Khalapur toll plaza (the alignment's western datum ⟨VERIFY⟩) ────
-  g.add(box(26, 0.26, 17, mat.asphalt, -24, ROAD_Y + 0.5, 0)); // widened apron
-  for (let i = 0; i < 8; i++) {
-    g.add(box(1.1, 2.1, 1.1, mat.concrete, -24, ROAD_Y + 1.05, -6.6 + i * 1.9));
+  // ── Khalapur toll plaza — proportioned against the vehicle fleet ────
+  // (bus is 3.4 long × 0.85 tall; booths ≈ bus height, canopy just clears)
+  g.add(box(14, 0.26, 9, mat.asphalt, -24, ROAD_Y + 0.5, 0)); // apron
+  for (let i = 0; i < 6; i++) {
+    g.add(box(0.8, 0.95, 0.55, mat.concrete, -24, ROAD_Y + 0.48 + 0.475, -4.1 + i * 1.64));
   }
-  g.add(box(7, 0.5, 17, mat.steel, -24, ROAD_Y + 3.5, 0)); // canopy
-  g.add(box(0.7, 3.2, 0.7, mat.steel, -27.5, ROAD_Y + 1.6, -7.6));
-  g.add(box(0.7, 3.2, 0.7, mat.steel, -27.5, ROAD_Y + 1.6, 7.6));
+  g.add(box(4.2, 0.28, 10, mat.steel, -24, ROAD_Y + 2.05, 0)); // canopy
+  for (const [dx, dz] of [
+    [-1.7, -4.6],
+    [-1.7, 4.6],
+    [1.7, -4.6],
+    [1.7, 4.6],
+  ]) {
+    g.add(box(0.4, 1.6, 0.4, mat.steel, -24 + dx, ROAD_Y + 1.2, dz));
+  }
 
   // ── Kusgaon merge gantry (eastern tie-in) ───────────────────────────
-  g.add(box(0.5, 0.9, 9, mat.machine, X_END + 24, ROAD_Y + 4.2, 0));
-  g.add(box(0.5, 3.8, 0.5, mat.steel, X_END + 24, ROAD_Y + 1.9, -4.2));
-  g.add(box(0.5, 3.8, 0.5, mat.steel, X_END + 24, ROAD_Y + 1.9, 4.2));
+  g.add(box(0.4, 0.7, 7, mat.machine, X_END + 24, ROAD_Y + 3.4, 0));
+  g.add(box(0.4, 2.9, 0.4, mat.steel, X_END + 24, ROAD_Y + 1.6, -3.3));
+  g.add(box(0.4, 2.9, 0.4, mat.steel, X_END + 24, ROAD_Y + 1.6, 3.3));
 
   return g;
 }

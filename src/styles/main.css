@@ -290,6 +290,11 @@ a:hover { text-decoration: underline; }
 }
 
 /* ── responsive ────────────────────────────────────────────────────── */
+/* mid widths: chip rail grows toward the progress meter — stack them */
+@media (max-width: 1420px) {
+  .hud-progress { bottom: 84px; }
+}
+
 @media (max-width: 760px) {
   .hud-card { width: min(320px, calc(100vw - 24px)); padding: var(--s2); }
   .hud-title { font-size: 20px; }

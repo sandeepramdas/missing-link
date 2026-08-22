@@ -118,8 +118,9 @@ export class Portalworks {
         wing.rotation.y = s * f.dir * 0.42;
         p.add(wing);
       }
-      // road stub through the portal so the corridor connects visually
-      p.add(box(11, 0.22, 6, mat.asphalt, f.x + f.dir * 4.5, ROAD_Y + 0.42, 0));
+      // road stub through the portal — same width AND deck height as the
+      // S11 surfacing and the tie-ins, so there is no kink or step at joins
+      p.add(box(11, 0.24, 5.2, mat.asphalt, f.x + f.dir * 4.5, ROAD_Y + 0.5, 0));
       p.scale.y = 1e-3;
       p.visible = false;
       this.group.add(p);
