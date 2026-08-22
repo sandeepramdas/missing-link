@@ -13,6 +13,7 @@ import {
   DirectionalLight,
   FogExp2,
   HemisphereLight,
+  PCFSoftShadowMap,
   Scene,
   SRGBColorSpace,
   WebGLRenderer,
@@ -21,7 +22,7 @@ import { CameraRig } from './CameraRig';
 import { ScrollEngine } from './ScrollEngine';
 import { QualityManager } from './QualityManager';
 import { hudStore, track } from './HUDBridge';
-import { Terrain } from '../world/Terrain';
+import { Terrain, heightAt } from '../world/Terrain';
 import { Sky } from '../world/Sky';
 import { buildVegetation } from '../world/Vegetation';
 import { Portalworks } from '../world/Portals';
@@ -43,9 +44,10 @@ export interface Mood {
 }
 
 const MOODS: Record<string, Mood> = {
-  // bright monsoon daylight — open air, green hills, glowing horizon
+  // bright monsoon daylight — denser haze buries the terrain-plane edge and
+  // the razor horizon that used to show in the hero
   monsoon: {
-    skyTop: 0x6fa8d6, skyBottom: 0xe8f0f4, fog: 0xd9e6ee, fogDensity: 0.00042,
+    skyTop: 0x6fa8d6, skyBottom: 0xe8f0f4, fog: 0xd9e6ee, fogDensity: 0.0008,
     exposure: 1.08, sunIntensity: 2.4, hemiIntensity: 1.05,
   },
   // tunnel — dark but LEGIBLE: lifted ambient, murk kept short-range
@@ -53,9 +55,11 @@ const MOODS: Record<string, Mood> = {
     skyTop: 0x15171b, skyBottom: 0x33373d, fog: 0x26282c, fogDensity: 0.0016,
     exposure: 1.0, sunIntensity: 0.35, hemiIntensity: 0.6,
   },
+  // golden — thinner fog + calmer exposure so the massif keeps rock, form
+  // and silhouette instead of collapsing into cream-brown wash
   golden: {
-    skyTop: 0x6d87ad, skyBottom: 0xf6d8a4, fog: 0xeccfa0, fogDensity: 0.00038,
-    exposure: 1.16, sunIntensity: 2.7, hemiIntensity: 0.95,
+    skyTop: 0x6d87ad, skyBottom: 0xf6d8a4, fog: 0xe6cda2, fogDensity: 0.0002,
+    exposure: 1.1, sunIntensity: 2.4, hemiIntensity: 0.95,
   },
   night: {
     skyTop: 0x0d1020, skyBottom: 0x2a3050, fog: 0x141830, fogDensity: 0.0006,
@@ -106,7 +110,9 @@ export class SceneDirector {
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
-    this.renderer.shadowMap.enabled = false; // grey-box; Phase 2 enables PCFSoft
+    // contact is the strongest "resting on the ground" cue — one sun shadow
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
     this.quality = new QualityManager(this.renderer);
@@ -122,6 +128,15 @@ export class SceneDirector {
 
     this.sun = new DirectionalLight(0xfff4e2, 2.4);
     this.sun.position.set(400, 500, 300);
+    this.sun.castShadow = true;
+    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.bias = -0.0015;
+    this.sun.shadow.camera.near = 50;
+    this.sun.shadow.camera.far = 1400;
+    // the frustum follows the focus target each frame (fitted, not scene-wide)
+    const sc = this.sun.shadow.camera;
+    sc.left = -160; sc.right = 160; sc.top = 160; sc.bottom = -160;
+    this.sun.target = this.rig.focusTarget;
     // bright sky bounce + green ground bounce — the daylight feel
     this.hemi = new HemisphereLight(0xdcecf7, 0x55603f, 1.05);
     // cool rim from the opposite quadrant so slopes facing away from the sun
@@ -132,7 +147,7 @@ export class SceneDirector {
 
     this.terrain = new Terrain();
     this.scene.add(this.terrain.group);
-    this.vegetation = buildVegetation(reducedMotion ? 500 : 700);
+    this.vegetation = buildVegetation(reducedMotion ? 500 : 700, this.terrain);
     this.vegetation.visible = false; // grows in once the massif has formed
     this.scene.add(this.vegetation);
 
@@ -168,7 +183,49 @@ export class SceneDirector {
       this.groups.set(s.id, { group, persistent: !!s.persistent });
     }
     this.scroll.registerSections(sections.map((s) => ({ id: s.id, t: s.range[0] })));
+
+    // shadow roles: everything structural casts; ground/sky/lines/points don't
+    this.scene.traverse((o) => {
+      const m = o as import('three').Mesh;
+      if (!m.isMesh) return;
+      m.castShadow = true;
+      m.receiveShadow = true;
+    });
+    this.terrain.mesh.castShadow = false;
+    this.sky.mesh.castShadow = this.sky.mesh.receiveShadow = false;
+
+    // compile every program up front — lazy compilation lands its hitch on
+    // exactly the transition frame where each material first becomes visible
+    this.renderer.compile(this.scene, this.rig.camera);
+
+    if (import.meta.env.DEV) this.auditCameraTracks();
   }
+
+  /** DEV: warn on any interpolated camera sample below terrain + clearance
+   *  (tunnel interiors excluded — those are meant to be inside). */
+  private auditCameraTracks(): void {
+    const INTERIOR = new Set(['S05', 'S06', 'S07', 'S10']);
+    for (const s of this.sections) {
+      if (INTERIOR.has(s.id)) continue;
+      for (let i = 0; i <= 60; i++) {
+        const lt = i / 60;
+        this.rig.sample(s.cameraTrack, lt);
+        const p = this.rig.debugTargetPos();
+        const ground = heightAt(p.x, p.z);
+        if (p.y < ground + 1.5) {
+          console.warn(
+            `[camera-audit] ${s.id} localT=${lt.toFixed(2)} buried: y=${p.y.toFixed(1)} ground=${ground.toFixed(1)} at x=${p.x.toFixed(0)},z=${p.z.toFixed(0)}`
+          );
+        }
+      }
+    }
+    this.rig.snap();
+  }
+
+  /** resolves after the first REAL rendered frame (the loader waits on this —
+   *  the terrain build is a large CPU-bound cost, not a network one) */
+  onFirstFrame: (() => void) | null = null;
+  private firstFrameDone = false;
 
   start(): void {
     gsap.ticker.add(() => this.frame());
@@ -181,11 +238,15 @@ export class SceneDirector {
 
     // damped follower — the one and only master-timeline driver
     this.t += (this.scroll.targetT - this.t) * damp(dt);
-    this.rig.setScrollVelocity(this.scroll.velocity * 0.01);
+    // pass raw lenis velocity; the rig owns the (working) gain
+    this.rig.setScrollVelocity(this.scroll.velocity);
+    // the world keeps breathing while the reader pauses: dust drifts, rain
+    // falls and recycles, mist rises — independent of scroll
+    this.particles.advect(dt);
+    // sky dome follows the camera along the corridor (a fixed centre makes
+    // the horizon glow slide as the camera travels 1,300 units)
+    this.sky.mesh.position.x = Math.max(0, Math.min(1330, this.rig.dolly.position.x));
 
-    // scrub-robustness: past S01 the massif is always fully formed, even when
-    // the user deep-links/seeks and S00's own update never ran
-    if (this.t > 0.16) this.terrain.setMorph(1);
     // trees sit at final terrain height — showing them mid-morph leaves them
     // floating over the flat contour map
     this.vegetation.visible = this.terrain.morph > 0.93;
@@ -196,18 +257,22 @@ export class SceneDirector {
     for (const s of this.sections) {
       const [t0, t1] = s.range;
       const isActive = this.t >= t0 && this.t < t1;
-      const isNeighbor = this.t >= t0 - 0.04 && this.t < t1 + 0.04;
-      if (isActive || isNeighbor) {
-        const localT = clamp01((this.t - t0) / (t1 - t0));
-        s.update(localT, dt, this.ctx);
-        if (isActive && !active) active = s;
-      }
+      // EVERY section updates EVERY frame with clamped localT. Updates are
+      // pure functions of localT and cheap, and this reconciles all state on
+      // any jump in t (reload, deep link, chip seek, fast scrub) — no stale
+      // geometry, no zero-state persistent sections, no dead bands.
+      const localT = clamp01((this.t - t0) / (t1 - t0));
+      s.update(localT, dt, this.ctx);
+      if (isActive && !active) active = s;
+
       // lifecycle: non-persistent stages (machinery, survey gear) unload
-      // outside their neighbourhood; built infrastructure stays
+      // outside their neighbourhood; built infrastructure stays visible only
+      // once its own chapter has begun (scrolling back up tears it down)
       const entry = this.groups.get(s.id);
       if (entry) {
-        entry.group.visible =
-          entry.persistent || (this.t >= t0 - 0.06 && this.t < t1 + 0.06);
+        entry.group.visible = entry.persistent
+          ? this.t >= t0 - 0.04
+          : this.t >= t0 - 0.05 && this.t < t1 + 0.05;
       }
     }
     // past the final range boundary, keep the last section live
@@ -219,7 +284,8 @@ export class SceneDirector {
         prev?.exit?.(this.ctx);
         active.enter?.(this.ctx);
         this.activeId = active.id;
-        track(`section_enter_${active.id}`);
+        // once per session — scrubbing back and forth must not inflate analytics
+        track(`section_enter_${active.id}`, true);
         if (active.id === 'S06') track('breakthrough_view', true);
         if (active.id === 'S12') track('finale_view', true);
       }
@@ -233,6 +299,10 @@ export class SceneDirector {
     this.rig.tick(dt);
     this.quality.tick(dt);
     this.renderer.render(this.scene, this.rig.camera);
+    if (!this.firstFrameDone) {
+      this.firstFrameDone = true;
+      this.onFirstFrame?.();
+    }
   }
 
   private grade(sectionId: string, dt: number): void {

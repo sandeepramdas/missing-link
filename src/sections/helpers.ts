@@ -87,8 +87,10 @@ export function makeStringLights(
   const bulbs = makeInstanced(new BoxGeometry(1, 1, 1), mat.amberEmissive, slots);
   revealAll(bulbs, slots);
   g.add(bulbs);
+  // physical decay (2) with intensity retuned: pools of light in darkness,
+  // not an evenly-lit corridor
   for (let x = x0 + spacing / 2; x <= x1; x += spacing) {
-    const l = new PointLight(0xffd9a6, intensity, spacing * 2.4, 1.5);
+    const l = new PointLight(0xffd9a6, intensity * 7, spacing * 2.6, 2);
     l.position.set(x, ROAD_Y + 2.0, zOffset);
     g.add(l);
   }
@@ -152,7 +154,8 @@ export function lineSlots(
   return out;
 }
 
-/** slots fanned around a tunnel crown arc (rock bolts). */
+/** slots fanned around a tunnel crown arc (rock bolts), each bolt's axis
+ *  pointing RADIALLY into the rock — not straight up. */
 export function crownSlots(
   rings: number,
   perRing: number,
@@ -174,7 +177,7 @@ export function crownSlots(
         sx: 1,
         sy: 0.45, // ~4.5 m NATM rock bolts
         sz: 1,
-        ry: 0,
+        axis: [0, Math.sin(a), Math.cos(a)], // radial into the crown
         order: (r + centerDist) / rings,
       });
     }

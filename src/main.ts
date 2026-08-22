@@ -50,11 +50,12 @@ async function bootApp(reduced: boolean): Promise<void> {
   if (loader) {
     const ring = loader.querySelector('#loader-ring') as SVGPathElement | null;
     if (ring) ring.style.strokeDashoffset = '0';
-    // grey-box has no network-bound assets — resolve on next frame
-    requestAnimationFrame(() => {
+    // gate on the FIRST REAL RENDERED FRAME — the terrain build is a large
+    // CPU-bound cost even with zero network assets
+    director.onFirstFrame = () => {
       loader.classList.add('done');
       track('hero_loaded', true);
-    });
+    };
   }
 }
 

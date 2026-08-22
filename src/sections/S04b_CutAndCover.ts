@@ -24,10 +24,12 @@ export const S04b_CutAndCover: Section = {
   title: 'Cut and Cover',
   range: [0, 0],
   cameraTrack: [
-    { t: 0, pos: [4, 10.5, 2.2], look: [30, 9.5, 2.2], fov: 34 },
+    { t: 0, pos: [4, 12.4, 2.2], look: [30, 9.5, 2.2], fov: 34 },
     { t: 0.25, pos: [-16, 40, 52], look: [CX, 8, 0], fov: 50 },
     { t: 0.65, pos: [-8, 30, 40], look: [CX + 4, 8, 0], fov: 46, calm: true },
-    { t: 1, pos: [170, 50, 140], look: [238, 10, 84], fov: 52 },
+    // pan west to the casting yard on the staging plain (the old key crossed
+    // the massif shoulder 110 m underground)
+    { t: 1, pos: [-46, 28, 62], look: [-82, 9, 15], fov: 50 },
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();
@@ -49,20 +51,21 @@ export const S04b_CutAndCover: Section = {
     embankment.scale.y = 1e-3;
     g.add(embankment);
 
-    // casting yard for viaduct segments (glimpse) — near the gorge rim
+    // casting yard for viaduct segments — on the FLAT Khalapur staging plain
+    // beside the toll road (the old spot on the gorge rim floated in mid-air)
     yardSlots = [];
     for (let i = 0; i < 12; i++) {
       yardSlots.push({
-        x: 226 + (i % 4) * 9,
-        y: 10.2,
-        z: 78 + Math.floor(i / 4) * 8,
+        x: -92 + (i % 4) * 8,
+        y: ROAD_Y + 1.55,
+        z: 11 + Math.floor(i / 4) * 6.5,
         sx: 6, sy: 2.4, sz: 3,
         order: i / 11,
       });
     }
     yardSegs = makeInstanced(GEO.unitBox, mat.concrete, yardSlots);
     // slim portal gantry crane straddling the yard rows
-    gantry = box(1.2, 5.5, 18, mat.machine, 240, 12.6, 86);
+    gantry = box(1.2, 5.5, 16, mat.machine, -78, ROAD_Y + 3.1, 17.5);
     gantry.scale.setScalar(1e-4);
     const yard = new Group();
     yard.add(yardSegs, gantry);

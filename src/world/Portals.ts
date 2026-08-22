@@ -83,8 +83,8 @@ const boreCap = new CircleGeometry(ARCH_R * 0.98, 16);
 export class Portalworks {
   readonly group = new Group();
   private portals: Group[] = [];
-  private guide: Line;
-  private guideMat: LineDashedMaterial;
+  private guides: Line[] = [];
+  private guideMat!: LineDashedMaterial;
 
   constructor() {
     for (const f of FACES) {
@@ -127,15 +127,9 @@ export class Portalworks {
       this.portals.push(p);
     }
 
-    // draped survey line over each tunnel span (the aerial "blueprint")
-    const pts: Vector3[] = [];
-    for (const span of [TUNNEL_SHORT, TUNNEL_LONG]) {
-      for (let x = span.x0; x <= span.x1; x += 8) {
-        pts.push(new Vector3(x, Math.max(ROAD_Y + 1, heightAt(x, 0) + 2), 0));
-      }
-      // break between spans: duplicate last point so Line doesn't bridge the gorge
-      pts.push(pts[pts.length - 1].clone());
-    }
+    // draped survey line over each tunnel span (the aerial "blueprint") —
+    // ONE Line per span: a shared Line would connect the spans and draw a
+    // 151-unit dashed beam straight across the gorge
     this.guideMat = new LineDashedMaterial({
       color: PALETTE.sodiumAmber,
       dashSize: 4,
@@ -143,9 +137,16 @@ export class Portalworks {
       transparent: true,
       opacity: 0,
     });
-    this.guide = new Line(new BufferGeometry().setFromPoints(pts), this.guideMat);
-    this.guide.computeLineDistances();
-    this.group.add(this.guide);
+    this.guides = [TUNNEL_SHORT, TUNNEL_LONG].map((span) => {
+      const pts: Vector3[] = [];
+      for (let x = span.x0; x <= span.x1; x += 8) {
+        pts.push(new Vector3(x, Math.max(ROAD_Y + 1, heightAt(x, 0) + 2), 0));
+      }
+      const line = new Line(new BufferGeometry().setFromPoints(pts), this.guideMat);
+      line.computeLineDistances();
+      this.group.add(line);
+      return line;
+    });
   }
 
   /** driven from the director's frame loop with master-timeline t */
@@ -161,6 +162,6 @@ export class Portalworks {
     // route guide: fades in with geotech (S3), out before the finale grade
     const vis = window01(t, 0.19, 0.23) * (1 - window01(t, 0.93, 0.955));
     this.guideMat.opacity = 0.55 * vis;
-    this.guide.visible = vis > 0.01;
+    for (const gl of this.guides) gl.visible = vis > 0.01;
   }
 }

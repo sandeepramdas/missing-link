@@ -43,9 +43,10 @@ export const S12_Finale: Section = {
     // Kusgaon merge → golden hero on the span
     { t: 0, pos: [-72, 30, 78], look: [-10, 9, 0], fov: 52 }, // Khalapur toll plaza + portal
     { t: 0.16, pos: [-52, 24, 16], look: [31, 10, 0], fov: 46 }, // near-frontal: twin mouths + road in
+    { t: 0.27, pos: [110, 78, 118], look: [270, 10, 0], fov: 54 }, // hop OVER the short-tunnel massif
     { t: 0.38, pos: [PYLON_X - 65, 30, 92], look: [PYLON_X + 36, 12, 0], fov: 56 }, // the bridge
     { t: 0.48, pos: [760, 92, 160], look: [1000, 14, 0], fov: 55 }, // aerial sweep OVER the massif (never through it)
-    { t: 0.58, pos: [1170, 26, 80], look: [1243, 10, 0], fov: 50 }, // exit portal, Kusgaon end
+    { t: 0.58, pos: [1266, 26, 26], look: [1238, 10, 0], fov: 48 }, // exit portal, Kusgaon end
     { t: 0.74, pos: [1315, 42, 130], look: [1250, 11, 0], fov: 52, calm: true }, // merge to the expressway
     { t: 1, pos: [490, 95, 250], look: [PYLON_X + 4, 13, 0], fov: 58, calm: true }, // golden hero
   ],
@@ -74,8 +75,10 @@ export const S12_Finale: Section = {
       speeds[i] = (0.02 + ((i * 29) % 10) * 0.0016) * (pick === 'car' ? 1.15 : 0.9);
       offsets[i] = (i / N_VEHICLES + ((i * 13) % 7) * 0.01) % 1;
       const dir = i % 2 === 0 ? 1 : -1;
-      lanes[i] = dir * (TUBE_OFFSET_Z + (i % 4 < 2 ? -0.6 : 0.6));
+      // lanes stay ON the 5.2-wide deck (±2.6): outer lane at ±2.0, inner ±1.0
+      lanes[i] = dir * (1.0 + (i % 4 < 2 ? 0 : 1.0));
     }
+    void TUBE_OFFSET_Z;
 
     pylonBeacon = box(0.6, 0.6, 0.6, new MeshBasicMaterial({ color: PALETTE.sodiumAmber }), PYLON_X, 14.8, 0);
     pylonBeacon.visible = false; // zero state — lit only during the finale dusk

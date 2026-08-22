@@ -96,7 +96,8 @@ export const S01_Problem: Section = {
     return g;
   },
   update(localT, _dt, ctx): void {
-    ctx.terrain.setMorph(1); // hold full terrain from here on
+    // NOTE: terrain morph is owned by S00 (which now updates every frame) —
+    // a neighbour writing shared world state was destroying the hero beat.
     // draw on, then desaturate/hand off completely before S2's reveal
     ghatMat.opacity = 0.85 * easeOutCubic(window01(localT, 0.05, 0.3)) * (1 - window01(localT, 0.85, 1));
     ghatLineMat.opacity = ghatMat.opacity;

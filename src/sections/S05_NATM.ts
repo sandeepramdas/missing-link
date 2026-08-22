@@ -4,7 +4,7 @@
  * a pure function of localT (scrub-safe both directions). A live METERS
  * ADVANCED counter and the 4-face schematic feed the HUD via hudStore.
  */
-import { Group, Mesh, MeshLambertMaterial, PointLight, CylinderGeometry } from 'three';
+import { BackSide, Group, Mesh, MeshLambertMaterial, PointLight, CylinderGeometry } from 'three';
 import type { BuildCtx, Section } from './types';
 import { GEO, box, makeInstanced, makeTubeShell, makeStringLights, mat, crownSlots } from './helpers';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
@@ -14,7 +14,10 @@ import { window01, easeOutCubic, lerp, _c1, _c2 } from '../utils/scratch';
 import { PALETTE } from '../materials/greybox';
 
 const Z = TUBE_OFFSET_Z;
-const FACE_START = TUNNEL_LONG.x0 + 12; // 361
+// deep enough inside the massif that the whole stage — bore, machines and the
+// camera's full run-up — sits under rock (the gorge wall blend ends ~x=363;
+// the old +12 hung 33 units of tunnel in the open gorge)
+const FACE_START = TUNNEL_LONG.x0 + 75; // 424
 const CYCLES = 4;
 const ADV = 8; // world units per cycle (readability over realism — PRD NG1)
 
@@ -85,7 +88,15 @@ export const S05_NATM: Section = {
     stage.add(bolts);
 
     // shotcrete shell sweeps forward behind the face
-    shotcreteMat = new MeshLambertMaterial({ color: PALETTE.shotcrete, transparent: true, opacity: 0.95 });
+    // BackSide: the camera lives INSIDE the bore — front faces of an
+    // open-ended cylinder are invisible from in there (the whole shotcrete
+    // beat rendered nothing)
+    shotcreteMat = new MeshLambertMaterial({
+      color: PALETTE.shotcrete,
+      transparent: true,
+      opacity: 0.95,
+      side: BackSide,
+    });
     shotcreteShell = new Mesh(new CylinderGeometry(1.42, 1.42, 1, 14, 1, true), shotcreteMat);
     shotcreteShell.rotation.z = Math.PI / 2;
     shotcreteShell.position.set(FACE_START - ADV, ROAD_Y + 0.9, Z);
@@ -97,9 +108,9 @@ export const S05_NATM: Section = {
     stage.add(blastLight);
 
     // headlamps so the tunnel is never pitch black in grey-box
-    const work = new PointLight(0xffe6c4, 40, 90, 1.2);
+    const work = new PointLight(0xffe6c4, 280, 90, 2);
     work.position.set(FACE_START - 10, ROAD_Y + 2.4, Z);
-    const work2 = new PointLight(0xffe6c4, 30, 80, 1.2);
+    const work2 = new PointLight(0xffe6c4, 220, 80, 2);
     work2.position.set(FACE_START + 18, ROAD_Y + 2.4, Z);
     stage.add(work, work2);
 
@@ -135,11 +146,13 @@ export const S05_NATM: Section = {
     ctx.particles.scrub('s5_dust', window01(ph, 0.32, 0.75));
     ctx.rig.noiseAmp = baseNoiseAmp + blastPulse * 0.5;
 
-    // (3) muck 0.42–0.65: pile shrinks, loader shuttles to tipper
+    // (3) muck: the pile is CREATED by the blast (0.34–0.42), then cleared
+    // 0.42–0.65 — rubble must not exist before the explosion that makes it
     const muckK = window01(ph, 0.42, 0.65);
+    const muckSize = window01(ph, 0.34, 0.42) * (1 - muckK);
     muckPile.position.x = fx - 2;
-    muckPile.scale.set(3 * (1 - muckK), 1.4 * (1 - muckK) + 0.01, 2.4 * (1 - muckK));
-    muckPile.visible = muckK < 0.98;
+    muckPile.scale.set(3 * muckSize + 0.01, 1.4 * muckSize + 0.01, 2.4 * muckSize + 0.01);
+    muckPile.visible = muckSize > 0.02;
     const shuttle = Math.abs(((muckK * 3) % 2) - 1); // 3 round trips
     loader.position.x = lerp(fx - 3.5, fx - 14, shuttle);
     tipper.position.x = fx - 17;

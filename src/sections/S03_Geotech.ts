@@ -7,7 +7,6 @@ import type { BuildCtx, Section } from './types';
 import { GEO, makeInstanced, lineSlots } from './helpers';
 import { mat } from '../materials/greybox';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
-import { ROAD_Y } from '../world/Alignment';
 import { heightAt } from '../world/Terrain';
 import { window01, easeOutCubic } from '../utils/scratch';
 
@@ -48,7 +47,7 @@ export const S03_Geotech: Section = {
     // survey markers along the whole alignment
     markerSlots = lineSlots(24, 0, 1330, 0, 0, [0.6, 3, 0.6]).map((s, i) => ({
       ...s,
-      y: Math.max(ROAD_Y, heightAt(s.x, 0)) + 1.5,
+      y: heightAt(s.x, 0) + 1.5, // ON the ground — gorge markers were pinned to road level, hovering 375 m up
       order: i / 23,
     }));
     markers = makeInstanced(GEO.unitBox, mat.orangeEmissive, markerSlots);

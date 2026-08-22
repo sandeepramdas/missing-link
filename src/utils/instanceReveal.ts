@@ -14,6 +14,8 @@ export interface InstanceSlot {
   sy: number;
   sz: number;
   ry?: number;
+  /** align local +Y to this world direction (rock bolts drive radially) */
+  axis?: [number, number, number];
   /** normalized stagger order 0..1 (defaults to index/count) */
   order?: number;
 }
@@ -39,7 +41,12 @@ export function revealInstances(
     const k = opts.overshoot ? easeOutBackSoft(local) : easeOutCubic(local);
     const sy = Math.max(1e-4, s.sy * k);
     _v1.set(s.x, opts.growFrom === 'bottom' ? s.y + (sy - s.sy) * 0.5 : s.y, s.z);
-    _q1.setFromAxisAngle(UP, s.ry ?? 0);
+    if (s.axis) {
+      AXIS.set(s.axis[0], s.axis[1], s.axis[2]).normalize();
+      _q1.setFromUnitVectors(UP, AXIS);
+    } else {
+      _q1.setFromAxisAngle(UP, s.ry ?? 0);
+    }
     _m1.compose(_v1, _q1, SCALE.set(Math.max(1e-4, s.sx * k), sy, Math.max(1e-4, s.sz * k)));
     mesh.setMatrixAt(i, _m1);
   }
@@ -49,4 +56,5 @@ export function revealInstances(
 
 import { Vector3 } from 'three';
 const UP = new Vector3(0, 1, 0);
+const AXIS = new Vector3();
 const SCALE = new Vector3();

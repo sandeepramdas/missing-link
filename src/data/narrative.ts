@@ -103,8 +103,8 @@ export const narrative: SceneCopy[] = [
   {
     id: 'S06',
     kicker: 'BREAKTHROUGH',
-    title: 'Daylight',
-    body: 'The final veil of rock gives way. Two tubes become one continuous bore.',
+    title: 'Two Drives Meet',
+    body: "The final veil gives way — and the other face's floodlights cut through the dust. One continuous bore, driven from both ends.",
     chip: 'Breakthrough',
     stats: [
       { label: 'Long tube', path: 'tunnels.longTube_km', format: '{v} km', countUp: true },

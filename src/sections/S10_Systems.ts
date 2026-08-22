@@ -9,7 +9,7 @@ import type { BuildCtx, Section } from './types';
 import { GEO, box, cyl, makeInstanced, makeStringLights, makeTubeShell, mat } from './helpers';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { ROAD_Y, TUBE_OFFSET_Z } from '../world/Alignment';
-import { window01, clamp01 } from '../utils/scratch';
+import { window01, clamp01, _c1 } from '../utils/scratch';
 import { PALETTE } from '../materials/greybox';
 
 const Z = TUBE_OFFSET_Z;
@@ -40,13 +40,17 @@ export const S10_Systems: Section = {
     const g = new Group();
     g.add(makeTubeShell(X0 - 30, X1 + 60, Z));
 
-    // paired jet fans at intervals near the crown
+    // paired jet fans at intervals near the crown. Euler order ZYX: tip the
+    // axis to X (z) AFTER spinning about the fan's own axis (y) — the default
+    // order made them precess instead of spin. Dimensions animate as
+    // multipliers of the stored base, never setScalar.
     fans = [];
     for (let x = X0 + 14; x < X1; x += 40) {
       for (const dz of [-0.7, 0.7]) {
         const f = cyl(0.45, 2.2, mat.steel, x, ROAD_Y + 2.05, Z + dz);
+        f.rotation.order = 'ZYX';
         f.rotation.z = Math.PI / 2;
-        f.scale.setScalar(1e-3);
+        f.scale.multiplyScalar(1e-3);
         fans.push(f);
         g.add(f);
       }
@@ -64,7 +68,7 @@ export const S10_Systems: Section = {
         order: i / (N - 1),
       });
     }
-    lampMat = new MeshBasicMaterial({ color: 0x333333 });
+    lampMat = new MeshBasicMaterial({ color: 0xffffff }); // instanceColor carries the cascade
     lamps = makeInstanced(GEO.unitBox, lampMat, lampSlots);
     g.add(lamps);
     amberGlow = new PointLight(PALETTE.sodiumAmber, 0, 140, 1.1);
@@ -105,18 +109,24 @@ export const S10_Systems: Section = {
     return g;
   },
   update(localT, dt, ctx): void {
-    // fans mount 5–30%, then spin up
+    // fans mount 5–30%, then spin up about their OWN axis
     const mountK = window01(localT, 0.05, 0.3);
     fanSpin += dt * (2 + 18 * window01(localT, 0.3, 0.6));
     for (let i = 0; i < fans.length; i++) {
-      const own = clamp01(mountK * fans.length - i);
-      fans[i].scale.setScalar(Math.max(1e-3, own));
-      fans[i].rotation.x = fanSpin;
+      const own = Math.max(1e-3, clamp01(mountK * fans.length - i));
+      fans[i].scale.set(0.9 * own, 2.2 * own, 0.9 * own); // base dims × multiplier
+      fans[i].rotation.y = fanSpin;
     }
-    // lamp bloom cascade 35–65% (staggered on/off via instanced reveal + glow)
+    // lamp cascade 35–65%: a REAL cascade — each lamp switches on via its own
+    // instance colour (a shared-material setHex flipped the whole run at once)
     const lampK = window01(localT, 0.35, 0.65);
     revealInstances(lamps, lampSlots, Math.max(lampK, 0.001), { spread: 0.1 });
-    lampMat.color.setHex(lampK > 0.02 ? PALETTE.sodiumAmber : 0x333333);
+    for (let i = 0; i < lampSlots.length; i++) {
+      const on = lampK * lampSlots.length - i > 0;
+      _c1.setHex(on ? PALETTE.sodiumAmber : 0x333338);
+      lamps.setColorAt(i, _c1);
+    }
+    if (lamps.instanceColor) lamps.instanceColor.needsUpdate = true;
     amberGlow.intensity = 26 * lampK;
     // cladding snaps on 55–80%
     revealInstances(cladding, cladSlots, window01(localT, 0.55, 0.8), { spread: 0.2, overshoot: true });

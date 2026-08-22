@@ -19,7 +19,7 @@ let flood: PointLight;
 
 export const S06_Breakthrough: Section = {
   id: 'S06',
-  title: 'Daylight',
+  title: 'Two Drives Meet',
   range: [0, 0],
   cameraTrack: [
     { t: 0, pos: [BX - 36, ROAD_Y + 1.6, Z], look: [BX, ROAD_Y + 1.2, Z], fov: 30 },
@@ -41,8 +41,10 @@ export const S06_Breakthrough: Section = {
     g.add(veil);
 
     // light-shaft cheat: additive cone through the opening
+    // the OTHER drive's sodium floodlights through the veil — this beat is
+    // 4 km under rock, so "daylight" here would be nonsense
     shaftMat = new MeshBasicMaterial({
-      color: 0xfff2d8,
+      color: 0xffc987,
       transparent: true,
       opacity: 0,
       blending: AdditiveBlending,

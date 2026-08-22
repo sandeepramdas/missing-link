@@ -25,8 +25,11 @@ export class QualityManager {
     this.tier = detectTier(renderer);
     track(`quality_tier_${this.tier}`, true);
     const maxDpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.dprLadder = [maxDpr, Math.min(maxDpr, 1.5), 1.25, 1.0].filter(
-      (v, i, a) => a.indexOf(v) === i
+    // strictly descending ladder capped at the device DPR — the old list
+    // could dedupe into an ASCENDING pair on 1x displays, making "step down"
+    // raise the pixel ratio
+    this.dprLadder = [...new Set([maxDpr, 1.5, 1.25, 1.0].filter((v) => v <= maxDpr))].sort(
+      (a, b) => b - a
     );
     if (this.tier === 'low') this.step = Math.max(0, this.dprLadder.length - 2);
     if (this.tier === 'med') this.step = Math.min(1, this.dprLadder.length - 1);
@@ -35,8 +38,15 @@ export class QualityManager {
     if (this.tier !== 'high') this.particleScale = 0.5;
   }
 
+  private warmup = 3; // ignore the boot hitch (terrain build, shader compile)
+  private fastTime = 0;
+
   /** call once per frame with dt in seconds */
   tick(dt: number): void {
+    if (this.warmup > 0) {
+      this.warmup -= dt;
+      return;
+    }
     this.acc += dt;
     this.frames++;
     if (this.acc < 0.5) return;
@@ -45,12 +55,33 @@ export class QualityManager {
     this.frames = 0;
     if (fps < 50) {
       this.slowTime += 0.5;
+      this.fastTime = 0;
       if (this.slowTime >= 2) {
         this.slowTime = 0;
         this.stepDown();
       }
     } else {
       this.slowTime = 0;
+      // recovery: sustained headroom steps quality back up
+      if (fps > 57) {
+        this.fastTime += 0.5;
+        if (this.fastTime >= 10) {
+          this.fastTime = 0;
+          this.stepUp();
+        }
+      } else {
+        this.fastTime = 0;
+      }
+    }
+  }
+
+  private stepUp(): void {
+    if (this.particleScale < 1) {
+      this.particleScale = Math.min(1, this.particleScale * 2);
+    } else if (this.step > 0) {
+      this.step--;
+      this.dpr = this.dprLadder[this.step];
+      this.renderer.setPixelRatio(this.dpr);
     }
   }
 

@@ -39,8 +39,8 @@ export const S09_Pylon: Section = {
   cameraTrack: [
     { t: 0, pos: [270, 24, 70], look: [PYLON_X, 8, 0], fov: 58 },
     { t: 0.25, pos: [PYLON_X - 16, 6, 22], look: [PYLON_X, 12, 0], fov: 60 }, // heroic low angle
-    { t: 0.55, pos: [PYLON_X + 26, 20, 42], look: [PYLON_X, 11, 0], fov: 55, calm: true },
-    { t: 0.85, pos: [PYLON_X + 48, 26, 26], look: [PYLON_X - 6, 10, 0], fov: 58 },
+    { t: 0.55, pos: [PYLON_X + 26, 27, 42], look: [PYLON_X, 11, 0], fov: 55, calm: true },
+    { t: 0.85, pos: [PYLON_X + 48, 34, 30], look: [PYLON_X - 6, 10, 0], fov: 58 },
     { t: 1, pos: [PYLON_X + 30, 42, 90], look: [PYLON_X, 10, 0], fov: 60 },
   ],
   build(_ctx: BuildCtx): Group {

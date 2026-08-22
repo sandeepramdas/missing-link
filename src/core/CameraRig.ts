@@ -84,14 +84,24 @@ export class CameraRig {
     this.camera.updateProjectionMatrix();
   }
 
-  /** lenis velocity → subtle FOV kick, settling expo.out (PRD §4.3) */
+  /** lenis velocity (raw px/frame) → subtle FOV kick, settling expo.out.
+   *  Gain tuned so a brisk trackpad flick reads ~1.5° (the old chain of
+   *  0.01 × 0.35 was mathematically dead). */
   setScrollVelocity(v: number): void {
-    this.velocityKick = Math.max(-2, Math.min(2, v * 0.35));
+    this.velocityKick = Math.max(-2, Math.min(2, v * 0.06));
+  }
+
+  /** current sampled target position (dev camera audits) */
+  debugTargetPos(): Vector3 {
+    return this.targetPos;
   }
 
   tick(dt: number): void {
     this.time += dt;
-    const d = damp(dt * 2.2);
+    // fast tracking damp: the master timeline is already scrub-damped by the
+    // director and Lenis — a third slow filter here made the camera cut
+    // corners through hillsides. This stage only removes key-frame kinks.
+    const d = damp(dt * 6);
     this.dolly.position.lerp(this.targetPos, d);
     this.focusTarget.position.lerp(this.targetFocus, d);
 
@@ -102,12 +112,14 @@ export class CameraRig {
       noise1(this.time * 0.23 + 31.7) * amp,
       0
     );
-    this.head.rotation.z = noise1(this.time * 0.17 + 91.2) * amp * 0.15;
 
     // aim the camera (not the group — Group.lookAt faces +Z) at the damped focus
     _v1.copy(this.focusTarget.position);
     this.dolly.updateMatrixWorld();
     this.camera.lookAt(_v1);
+    // operator roll AFTER lookAt — lookAt recomputes the quaternion and
+    // silently cancels any roll set before it
+    this.camera.rotateZ(noise1(this.time * 0.17 + 91.2) * amp * 0.15);
 
     // fov + velocity kick, decaying
     this.velocityKick *= Math.pow(0.02, dt);
