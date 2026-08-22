@@ -17,7 +17,7 @@ let backfill: Mesh;
 let embankment: Mesh;
 let yardSegs: ReturnType<typeof makeInstanced>;
 let yardSlots: InstanceSlot[] = [];
-let gantry: Mesh;
+let gantry: Group;
 
 export const S04b_CutAndCover: Section = {
   id: 'S04b',
@@ -25,25 +25,27 @@ export const S04b_CutAndCover: Section = {
   range: [0, 0],
   cameraTrack: [
     { t: 0, pos: [4, 12.4, 2.2], look: [30, 9.5, 2.2], fov: 34 },
-    { t: 0.25, pos: [-16, 40, 52], look: [CX, 8, 0], fov: 50 },
-    { t: 0.65, pos: [-8, 30, 40], look: [CX + 4, 8, 0], fov: 46, calm: true },
+    { t: 0.25, pos: [-20, 32, 42], look: [CX, 8, 0], fov: 50 },
+    { t: 0.65, pos: [-4, 22, 30], look: [CX + 2, 8, 0], fov: 46, calm: true },
     // pan west to the casting yard on the staging plain (the old key crossed
     // the massif shoulder 110 m underground)
     { t: 1, pos: [-46, 28, 62], look: [-82, 9, 15], fov: 50 },
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();
+    // road-scale works: the box is a twin-cell underpass (~8 units wide),
+    // not the 240×150 m megastructure the old dims implied
     trenchWalls = [
-      box(24, 5, 1.2, mat.rock, CX, ROAD_Y - 0.5, 7.5),
-      box(24, 5, 1.2, mat.rock, CX, ROAD_Y - 0.5, -7.5),
+      box(16, 3.6, 1.0, mat.rock, CX, ROAD_Y - 0.4, 4.8),
+      box(16, 3.6, 1.0, mat.rock, CX, ROAD_Y - 0.4, -4.8),
     ];
     g.add(...trenchWalls);
 
-    ccBox = box(22, 4.4, 12, mat.concrete, CX, ROAD_Y + 0.4, 0);
+    ccBox = box(14, 3.4, 7, mat.concrete, CX, ROAD_Y + 0.4, 0);
     ccBox.scale.setScalar(1e-4);
     g.add(ccBox);
 
-    backfill = box(24, 2.4, 15, new MeshLambertMaterial({ color: 0x4f5546, flatShading: true }), CX, ROAD_Y + 3.4, 0);
+    backfill = box(16, 1.8, 9, new MeshLambertMaterial({ color: 0x4f5546, flatShading: true }), CX, ROAD_Y + 2.8, 0);
     backfill.scale.y = 1e-3;
     g.add(backfill);
 
@@ -64,9 +66,17 @@ export const S04b_CutAndCover: Section = {
       });
     }
     yardSegs = makeInstanced(GEO.unitBox, mat.concrete, yardSlots);
-    // slim portal gantry crane straddling the yard rows
-    gantry = box(1.2, 5.5, 16, mat.machine, -78, ROAD_Y + 3.1, 17.5);
-    gantry.scale.setScalar(1e-4);
+    // a REAL portal gantry crane: legs + top beam + hoist straddling the rows
+    // (the previous single box read as a giant orange wall)
+    gantry = new Group();
+    gantry.add(
+      box(0.5, 0.5, 13, mat.machine, -78, ROAD_Y + 3.0, 14.2),
+      box(0.4, 2.9, 0.4, mat.steel, -78, ROAD_Y + 1.55, 8.2),
+      box(0.4, 2.9, 0.4, mat.steel, -78, ROAD_Y + 1.55, 20.2),
+      box(0.7, 0.9, 0.7, mat.steel, -78, ROAD_Y + 2.4, 14.2)
+    );
+    gantry.scale.y = 1e-3;
+    gantry.visible = false;
     const yard = new Group();
     yard.add(yardSegs, gantry);
     g.add(yard);
@@ -75,20 +85,21 @@ export const S04b_CutAndCover: Section = {
   update(localT, _dt, _ctx): void {
     // trench opens (walls part), box casts, backfill closes over
     const open = easeOutCubic(window01(localT, 0.02, 0.22));
-    trenchWalls[0].position.z = 6.5 + open * 2;
-    trenchWalls[1].position.z = -6.5 - open * 2;
+    trenchWalls[0].position.z = 4.2 + open * 1.4;
+    trenchWalls[1].position.z = -4.2 - open * 1.4;
     // box() stores dimensions in scale — progress multiplies the stored dims
     const cast = Math.max(1e-4, easeOutBackSoft(window01(localT, 0.22, 0.5)));
-    ccBox.scale.set(22 * cast, 4.4 * cast, 12 * cast);
+    ccBox.scale.set(14 * cast, 3.4 * cast, 7 * cast);
     ccBox.visible = cast > 0.01;
     const bk = window01(localT, 0.5, 0.72);
-    backfill.scale.y = Math.max(1e-3, 2.4 * bk);
+    backfill.scale.y = Math.max(1e-3, 1.8 * bk);
     backfill.visible = bk > 0.01;
     const ek = easeOutCubic(window01(localT, 0.35, 0.65));
     embankment.scale.y = Math.max(1e-3, 2 * ek);
     embankment.visible = ek > 0.01;
     revealInstances(yardSegs, yardSlots, window01(localT, 0.68, 0.95), { spread: 0.3, overshoot: true });
     const gk = Math.max(1e-4, easeOutCubic(window01(localT, 0.75, 0.95)));
-    gantry.scale.set(1.2 * gk, 5.5 * gk, 18 * gk);
+    gantry.scale.y = gk;
+    gantry.visible = gk > 0.01;
   },
 };

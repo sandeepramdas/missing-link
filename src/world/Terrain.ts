@@ -15,6 +15,7 @@
 import {
   BufferAttribute,
   Color,
+  DoubleSide,
   Group,
   LineBasicMaterial,
   LineSegments,
@@ -202,7 +203,15 @@ export class Terrain {
  *  already-sampled height grid (the old version re-called heightAt 4× per
  *  vertex — most of the 212 ms terrain build). Colours are authored in sRGB
  *  and converted to the renderer's linear working space. */
-const terrainNaturalMat = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
+// DoubleSide: the heightfield is the mountain's only skin — with culled back
+// faces, tunnel interiors see straight THROUGH the massif to the sunlit
+// plains beyond. Back faces have inverted normals so they render near-black,
+// sealing the underground.
+const terrainNaturalMat = new MeshLambertMaterial({
+  vertexColors: true,
+  flatShading: true,
+  side: DoubleSide,
+});
 const _cc = new Color();
 
 function buildTerrainColors(heights: Float32Array): Float32BufferAttribute {

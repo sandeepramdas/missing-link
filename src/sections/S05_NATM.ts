@@ -44,11 +44,13 @@ export const S05_NATM: Section = {
   title: 'The NATM Cycle',
   range: [0, 0],
   cameraTrack: [
-    // in-tunnel dolly following the face, tight FOV (28–32°)
-    { t: 0, pos: [FACE_START - 30, ROAD_Y + 1.6, Z], look: [FACE_START, ROAD_Y + 1.2, Z], fov: 34 },
-    { t: 0.3, pos: [FACE_START - 20, ROAD_Y + 1.6, Z + 0.8], look: [FACE_START + ADV, ROAD_Y + 1.2, Z], fov: 30 },
-    { t: 0.7, pos: [FACE_START - 8, ROAD_Y + 1.7, Z - 0.6], look: [FACE_START + 2.5 * ADV, ROAD_Y + 1.2, Z], fov: 29, calm: true },
-    { t: 1, pos: [FACE_START + 2 * ADV, ROAD_Y + 1.6, Z], look: [FACE_START + 4 * ADV + 14, ROAD_Y + 1.2, Z], fov: 28 },
+    // in-tunnel dolly on the CLEAR lane (machines shuttle on Z−; camera rides
+    // Z+ so the tipper never parks in front of the lens), tight FOV
+    { t: 0, pos: [FACE_START - 26, ROAD_Y + 1.8, Z + 0.85], look: [FACE_START, ROAD_Y + 1.1, Z], fov: 34 },
+    { t: 0.3, pos: [FACE_START - 17, ROAD_Y + 1.8, Z + 0.85], look: [FACE_START + ADV, ROAD_Y + 1.1, Z], fov: 31 },
+    { t: 0.7, pos: [FACE_START - 4, ROAD_Y + 1.8, Z + 0.85], look: [FACE_START + 2.5 * ADV, ROAD_Y + 1.1, Z], fov: 30, calm: true },
+    // final: settled BEHIND the last face position, never jammed against it
+    { t: 1, pos: [FACE_START + 1.2 * ADV, ROAD_Y + 1.8, Z + 0.85], look: [FACE_START + 4 * ADV + 10, ROAD_Y + 1.1, Z], fov: 30 },
   ],
   build(ctx: BuildCtx): Group {
     stage = new Group();
@@ -75,8 +77,8 @@ export const S05_NATM: Section = {
     jumbo.position.set(faceX(0) - 6, ROAD_Y, Z);
     stage.add(jumbo);
 
-    loader = box(2.8, 1.5, 1.6, mat.machine, faceX(0) - 12, ROAD_Y + 0.75, Z + 0.6);
-    tipper = box(3.4, 1.8, 1.8, mat.steel, faceX(0) - 18, ROAD_Y + 0.9, Z - 0.6);
+    loader = box(2.8, 1.5, 1.6, mat.machine, faceX(0) - 12, ROAD_Y + 0.75, Z - 0.75);
+    tipper = box(3.4, 1.8, 1.8, mat.steel, faceX(0) - 18, ROAD_Y + 0.9, Z - 0.85);
     muckPile = new Mesh(GEO.sphere, mat.rock);
     muckPile.scale.set(3, 1.4, 2.4);
     muckPile.position.set(faceX(0) - 2, ROAD_Y + 0.4, Z);
@@ -108,9 +110,9 @@ export const S05_NATM: Section = {
     stage.add(blastLight);
 
     // headlamps so the tunnel is never pitch black in grey-box
-    const work = new PointLight(0xffe6c4, 280, 90, 2);
+    const work = new PointLight(0xffe6c4, 140, 90, 2);
     work.position.set(FACE_START - 10, ROAD_Y + 2.4, Z);
-    const work2 = new PointLight(0xffe6c4, 220, 80, 2);
+    const work2 = new PointLight(0xffe6c4, 110, 80, 2);
     work2.position.set(FACE_START + 18, ROAD_Y + 2.4, Z);
     stage.add(work, work2);
 

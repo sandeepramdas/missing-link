@@ -6,7 +6,9 @@
 import {
   BackSide,
   BoxGeometry,
+  CircleGeometry,
   CylinderGeometry,
+  DoubleSide,
   Group,
   InstancedMesh,
   Material,
@@ -55,6 +57,8 @@ export function cyl(r: number, h: number, m: Material, x = 0, y = 0, z = 0): Mes
 /** Interior tunnel shell (back-side cylinder + floor) for one tube.
  *  Warm mid-grey, not near-black — work lights must have something to catch. */
 const tubeInterior = new MeshLambertMaterial({ color: 0x4a4642, side: BackSide });
+const tubeEndCap = new MeshLambertMaterial({ color: 0x0c0c0f, side: DoubleSide });
+const capGeo = new CircleGeometry(1.46, 14);
 export function makeTubeShell(x0: number, x1: number, zOffset: number): Group {
   const g = new Group();
   const len = x1 - x0;
@@ -66,6 +70,15 @@ export function makeTubeShell(x0: number, x1: number, zOffset: number): Group {
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(x0 + len / 2, ROAD_Y + 0.02, zOffset);
   g.add(shell, floor);
+  // dark end caps: the bore must terminate in darkness — with no cap the
+  // sightline down the axis exits the shell and shows whatever stands 7 km
+  // away (the far portal was visible THROUGH the mountain)
+  for (const xe of [x0, x1]) {
+    const cap = new Mesh(capGeo, tubeEndCap);
+    cap.position.set(xe, ROAD_Y + 0.9, zOffset);
+    cap.rotation.y = Math.PI / 2;
+    g.add(cap);
+  }
   return g;
 }
 
@@ -90,7 +103,7 @@ export function makeStringLights(
   // physical decay (2) with intensity retuned: pools of light in darkness,
   // not an evenly-lit corridor
   for (let x = x0 + spacing / 2; x <= x1; x += spacing) {
-    const l = new PointLight(0xffd9a6, intensity * 7, spacing * 2.6, 2);
+    const l = new PointLight(0xffd9a6, intensity * 3.5, spacing * 2.6, 2);
     l.position.set(x, ROAD_Y + 2.0, zOffset);
     g.add(l);
   }

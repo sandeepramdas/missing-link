@@ -49,11 +49,15 @@ export const S07_Lining: Section = {
     (rings as InstancedMesh).geometry = ringGeo;
     g.add(rings);
 
-    // cross-passage doors every ~30 units (~300 m ⟨VERIFY⟩)
+    // cross-passage doors every ~30 units (~300 m ⟨VERIFY⟩) — flush emissive
+    // panels ON the wall toward the twin tube (a free-standing block at z=0
+    // parked a giant green slab in the middle of the carriageway)
     doorSlots = [];
     let d = 0;
     for (let x = X0 + 15; x < X1; x += 30) {
-      doorSlots.push({ x, y: ROAD_Y + 1, z: 0, sx: 1.2, sy: 2, sz: 3.4, order: d++ / 6 });
+      doorSlots.push({
+        x, y: ROAD_Y + 0.85, z: Z - 1.36, sx: 1.3, sy: 1.5, sz: 0.16, order: d++ / 6,
+      });
     }
     doors = makeInstanced(GEO.unitBox, mat.greenEmissive, doorSlots);
     g.add(doors);

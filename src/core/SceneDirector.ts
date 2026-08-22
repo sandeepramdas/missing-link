@@ -306,7 +306,12 @@ export class SceneDirector {
   }
 
   private grade(sectionId: string, dt: number): void {
-    const target = MOODS[SECTION_MOOD[sectionId] ?? 'monsoon'];
+    const moodKey = SECTION_MOOD[sectionId] ?? 'monsoon';
+    const target = MOODS[moodKey];
+    // inside the mountain the sky dome must NOT render: terrain backfaces are
+    // culled, so from underground the dome shines through and blows the whole
+    // interior out white
+    this.sky.mesh.visible = moodKey !== 'tunnel';
     const k = damp(dt * 1.5);
     const m = this.moodCurrent;
     m.fogDensity += (target.fogDensity - m.fogDensity) * k;

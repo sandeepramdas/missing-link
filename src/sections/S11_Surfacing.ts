@@ -29,7 +29,9 @@ export const S11_Surfacing: Section = {
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();
-    // asphalt strips over viaducts + approaches (tunnels already floored)
+    // asphalt strips over viaducts + approaches (tunnels already floored).
+    // Viaduct spans also sweep a GIRDER beneath the asphalt — pavement must
+    // never float in mid-air between piers.
     deckStrips = [];
     for (const s of SPANS) {
       if (s.kind === 'tunnel') continue;
@@ -37,6 +39,12 @@ export const S11_Surfacing: Section = {
       m.scale.x = 1e-3;
       deckStrips.push({ mesh: m, x0: s.x0, x1: s.x1 });
       g.add(m);
+      if (s.kind === 'viaduct') {
+        const girder = box(s.x1 - s.x0, 0.9, 5.6, mat.concrete, (s.x0 + s.x1) / 2, ROAD_Y - 0.1, 0);
+        girder.scale.x = 1e-3;
+        deckStrips.push({ mesh: girder, x0: s.x0, x1: s.x1 });
+        g.add(girder);
+      }
     }
     // lane-marking dashes over the viaduct zone
     dashSlots = [];
@@ -54,11 +62,12 @@ export const S11_Surfacing: Section = {
       }
     }
     barriers = makeInstanced(GEO.unitBox, mat.concrete, barrierSlots);
-    // gantry signage on the approaches
+    // roadside sign boards at the deck edge (a floating overhead beam with
+    // no posts read as an orange stick hovering over the road)
     signSlots = [
-      { x: 216, y: ROAD_Y + 3.4, z: 0, sx: 0.4, sy: 0.4, sz: 7, order: 0 },
-      { x: 300, y: ROAD_Y + 3.4, z: 0, sx: 0.4, sy: 0.4, sz: 7, order: 0.5 },
-      { x: 344, y: ROAD_Y + 3.4, z: 0, sx: 0.4, sy: 0.4, sz: 7, order: 1 },
+      { x: 216, y: ROAD_Y + 1.55, z: 3.1, sx: 0.14, sy: 1.05, sz: 1.9, order: 0 },
+      { x: 300, y: ROAD_Y + 1.55, z: -3.1, sx: 0.14, sy: 1.05, sz: 1.9, order: 0.5 },
+      { x: 344, y: ROAD_Y + 1.55, z: 3.1, sx: 0.14, sy: 1.05, sz: 1.9, order: 1 },
     ];
     signs = makeInstanced(GEO.unitBox, mat.machine, signSlots);
     g.add(dashes, barriers, signs);
