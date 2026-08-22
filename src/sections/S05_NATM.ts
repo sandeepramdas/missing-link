@@ -70,17 +70,17 @@ export const S05_NATM: Section = {
 
     // drill jumbo: chassis + two booms
     jumbo = new Group();
-    const chassis = box(3.6, 1.6, 1.8, mat.machine, 0, 0.8, 0);
-    const boomL = box(3, 0.3, 0.3, mat.steel, 2.6, 1.6, 0.5);
-    const boomR = box(3, 0.3, 0.3, mat.steel, 2.6, 1.2, -0.5);
+    const chassis = box(2.4, 0.95, 1.2, mat.machine, 0, 0.55, 0);
+    const boomL = box(2.2, 0.18, 0.18, mat.steel, 1.9, 1.05, 0.35);
+    const boomR = box(2.2, 0.18, 0.18, mat.steel, 1.9, 0.8, -0.35);
     jumbo.add(chassis, boomL, boomR);
     jumbo.position.set(faceX(0) - 6, ROAD_Y, Z);
     stage.add(jumbo);
 
-    loader = box(2.8, 1.5, 1.6, mat.machine, faceX(0) - 12, ROAD_Y + 0.75, Z - 0.75);
-    tipper = box(3.4, 1.8, 1.8, mat.steel, faceX(0) - 18, ROAD_Y + 0.9, Z - 0.85);
+    loader = box(1.9, 0.85, 1.05, mat.machine, faceX(0) - 12, ROAD_Y + 0.45, Z - 0.75);
+    tipper = box(2.4, 1.0, 1.15, mat.steel, faceX(0) - 18, ROAD_Y + 0.52, Z - 0.85);
     muckPile = new Mesh(GEO.sphere, mat.rock);
-    muckPile.scale.set(3, 1.4, 2.4);
+    muckPile.scale.set(2.2, 1.0, 1.8);
     muckPile.position.set(faceX(0) - 2, ROAD_Y + 0.4, Z);
     stage.add(loader, tipper, muckPile);
 
@@ -153,7 +153,7 @@ export const S05_NATM: Section = {
     const muckK = window01(ph, 0.42, 0.65);
     const muckSize = window01(ph, 0.34, 0.42) * (1 - muckK);
     muckPile.position.x = fx - 2;
-    muckPile.scale.set(3 * muckSize + 0.01, 1.4 * muckSize + 0.01, 2.4 * muckSize + 0.01);
+    muckPile.scale.set(2.2 * muckSize + 0.01, 1.0 * muckSize + 0.01, 1.8 * muckSize + 0.01);
     muckPile.visible = muckSize > 0.02;
     const shuttle = Math.abs(((muckK * 3) % 2) - 1); // 3 round trips
     loader.position.x = lerp(fx - 3.5, fx - 14, shuttle);

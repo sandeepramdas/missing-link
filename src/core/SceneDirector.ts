@@ -50,10 +50,11 @@ const MOODS: Record<string, Mood> = {
     skyTop: 0x6fa8d6, skyBottom: 0xe8f0f4, fog: 0xd9e6ee, fogDensity: 0.0008,
     exposure: 1.08, sunIntensity: 2.4, hemiIntensity: 1.05,
   },
-  // tunnel — dark but LEGIBLE: lifted ambient, murk kept short-range
+  // tunnel — dark but LEGIBLE: lifted ambient so the bore geometry reads
+  // between light pools, murk kept short-range
   tunnel: {
-    skyTop: 0x15171b, skyBottom: 0x33373d, fog: 0x26282c, fogDensity: 0.0016,
-    exposure: 1.0, sunIntensity: 0.35, hemiIntensity: 0.6,
+    skyTop: 0x15171b, skyBottom: 0x33373d, fog: 0x26282c, fogDensity: 0.0011,
+    exposure: 1.05, sunIntensity: 0.35, hemiIntensity: 0.95,
   },
   // golden — thinner fog + calmer exposure so the massif keeps rock, form
   // and silhouette instead of collapsing into cream-brown wash

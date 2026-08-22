@@ -14,6 +14,7 @@ import {
   Material,
   Matrix4,
   Mesh,
+  MeshBasicMaterial,
   MeshLambertMaterial,
   PlaneGeometry,
   PointLight,
@@ -58,6 +59,10 @@ export function cyl(r: number, h: number, m: Material, x = 0, y = 0, z = 0): Mes
  *  Warm mid-grey, not near-black — work lights must have something to catch. */
 const tubeInterior = new MeshLambertMaterial({ color: 0x4a4642, side: BackSide });
 const tubeEndCap = new MeshLambertMaterial({ color: 0x0c0c0f, side: DoubleSide });
+const tubeFloor = new MeshLambertMaterial({ color: 0x3c3c44 });
+// carriageway furniture is UNLIT (Basic) — the road must read even in the
+// darkest stretch between light pools
+const tubeEdgeLine = new MeshBasicMaterial({ color: 0x8f8f98 });
 const capGeo = new CircleGeometry(1.46, 14);
 export function makeTubeShell(x0: number, x1: number, zOffset: number): Group {
   const g = new Group();
@@ -66,10 +71,30 @@ export function makeTubeShell(x0: number, x1: number, zOffset: number): Group {
   shell.rotation.z = Math.PI / 2;
   shell.position.set(x0 + len / 2, ROAD_Y + 0.9, zOffset);
   shell.scale.y = 1; // along axis after rotation
-  const floor = new Mesh(new PlaneGeometry(len, 2.6), mat.asphalt);
+  const floor = new Mesh(new PlaneGeometry(len, 2.6), tubeFloor);
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(x0 + len / 2, ROAD_Y + 0.02, zOffset);
   g.add(shell, floor);
+  // edge lines + centre dashes: the in-tunnel road was an unreadable black
+  // wedge without them
+  for (const s of [1, -1]) {
+    const edge = new Mesh(GEO.unitBox, tubeEdgeLine);
+    edge.scale.set(len, 0.03, 0.1);
+    edge.position.set(x0 + len / 2, ROAD_Y + 0.045, zOffset + s * 1.15);
+    g.add(edge);
+    // kerbs seal the floor↔wall corner — daylight was leaking through the
+    // gap between the flat floor and the curved shell
+    const kerb = new Mesh(GEO.unitBox, tubeFloor);
+    kerb.scale.set(len, 0.55, 0.42);
+    kerb.position.set(x0 + len / 2, ROAD_Y + 0.12, zOffset + s * 1.42);
+    g.add(kerb);
+  }
+  for (let x = x0 + 4; x < x1 - 2; x += 8) {
+    const dash = new Mesh(GEO.unitBox, mat.amberEmissive);
+    dash.scale.set(2.2, 0.03, 0.16);
+    dash.position.set(x, ROAD_Y + 0.045, zOffset);
+    g.add(dash);
+  }
   // dark end caps: the bore must terminate in darkness — with no cap the
   // sightline down the axis exits the shell and shows whatever stands 7 km
   // away (the far portal was visible THROUGH the mountain)
