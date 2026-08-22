@@ -1,8 +1,9 @@
 /**
- * Portalworks — PERSISTENT corridor anchors at all four tunnel faces:
- * headwall + wing walls + twin black tunnel mouths + a road stub running
- * into the mouth. Without these, roads dead-end into bare hillside and the
- * corridor never reads as one connected system from the air.
+ * Portalworks — PERSISTENT corridor anchors at all four tunnel faces, now a
+ * proper NATM expressway portal: an extruded face wall with two TRUE arched
+ * openings, projecting canopy hoods over each bore, dark bore-depth caps,
+ * wing walls, a crown parapet and a road stub. (Replaces the grey-box
+ * box-headwall + mouth-sticker version.)
  *
  * Also owns the "route guide": a dashed survey line draped over the massif
  * surface above each tunnel span — the aerial blueprint of where the tubes
@@ -14,11 +15,16 @@
 import {
   BufferGeometry,
   CircleGeometry,
+  CylinderGeometry,
+  ExtrudeGeometry,
   Group,
   Line,
   LineDashedMaterial,
   Mesh,
   MeshBasicMaterial,
+  MeshLambertMaterial,
+  Path,
+  Shape,
   Vector3,
 } from 'three';
 import { box, mat } from '../sections/helpers';
@@ -39,8 +45,40 @@ const FACES: PortalFace[] = [
   { x: TUNNEL_LONG.x1, dir: 1 }, // Kusgaon end
 ];
 
-const mouthMat = new MeshBasicMaterial({ color: 0x0b0b0e });
-const mouthGeo = new CircleGeometry(1.5, 20);
+const ARCH_R = 1.55; // opening radius
+const SPRING = 1.0; // straight wall height below the arch
+const faceMat = new MeshLambertMaterial({ color: 0xa8a8ad, flatShading: true });
+const hoodMat = new MeshLambertMaterial({ color: 0x9a9aa0, flatShading: true });
+const boreMat = new MeshBasicMaterial({ color: 0x0a0a0d });
+
+/** Face wall with two real arched openings, extruded. Local frame: X across
+ *  the road (world Z), Y up, extruded along +Z (world ±X after rotation). */
+function buildFaceGeometry(): ExtrudeGeometry {
+  const w = 13.6;
+  const h = 6.8;
+  const shape = new Shape();
+  shape.moveTo(-w / 2, 0);
+  shape.lineTo(w / 2, 0);
+  shape.lineTo(w / 2, h - 1.2);
+  shape.lineTo(0, h); // gentle crown peak
+  shape.lineTo(-w / 2, h - 1.2);
+  shape.closePath();
+  for (const zc of [TUBE_OFFSET_Z, -TUBE_OFFSET_Z]) {
+    const hole = new Path();
+    hole.moveTo(zc - ARCH_R, 0);
+    hole.lineTo(zc - ARCH_R, SPRING);
+    hole.absarc(zc, SPRING, ARCH_R, Math.PI, 0, true);
+    hole.lineTo(zc + ARCH_R, 0);
+    hole.closePath();
+    shape.holes.push(hole);
+  }
+  return new ExtrudeGeometry(shape, { depth: 1.3, bevelEnabled: false });
+}
+
+const faceGeo = buildFaceGeometry();
+/** canopy hood: upper half-shell projecting out over each bore */
+const hoodGeo = new CylinderGeometry(ARCH_R + 0.18, ARCH_R + 0.34, 3.4, 12, 1, true, 0, Math.PI);
+const boreCap = new CircleGeometry(ARCH_R * 0.98, 16);
 
 export class Portalworks {
   readonly group = new Group();
@@ -51,17 +89,32 @@ export class Portalworks {
   constructor() {
     for (const f of FACES) {
       const p = new Group();
-      // headwall with twin arched mouths
-      p.add(box(1.4, 6.4, 12.5, mat.concrete, f.x, ROAD_Y + 2.4, 0));
-      for (const z of [TUBE_OFFSET_Z, -TUBE_OFFSET_Z]) {
-        const mouth = new Mesh(mouthGeo, mouthMat);
-        mouth.position.set(f.x + f.dir * 0.75, ROAD_Y + 1.15, z);
-        mouth.rotation.y = f.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
-        p.add(mouth);
+
+      // arched face wall, stood PROUD of the terrain skin (buried walls show
+      // only their crown through the slope); wings cover the seam behind
+      const OUT = 2.0;
+      const face = new Mesh(faceGeo, faceMat);
+      face.rotation.y = f.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      face.position.set(f.x + f.dir * OUT, ROAD_Y + 0.02, 0);
+      p.add(face);
+
+      for (const zc of [TUBE_OFFSET_Z, -TUBE_OFFSET_Z]) {
+        // projecting canopy hood over the bore
+        const hood = new Mesh(hoodGeo, hoodMat);
+        hood.rotation.z = Math.PI / 2; // cylinder axis → X
+        hood.rotation.y = f.dir > 0 ? 0 : Math.PI;
+        hood.position.set(f.x + f.dir * (OUT + 1.9), ROAD_Y + SPRING + 0.02, zc);
+        p.add(hood);
+        // dark bore depth just inside the opening
+        const cap = new Mesh(boreCap, boreMat);
+        cap.position.set(f.x + f.dir * (OUT - 2.6), ROAD_Y + SPRING + 0.3, zc);
+        cap.rotation.y = f.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+        p.add(cap);
       }
-      // wing walls easing the cut into the slope — tucked against the headwall
+
+      // wing walls easing the cut into the slope — tucked against the face
       for (const s of [1, -1]) {
-        const wing = box(4.6, 4.0, 1.0, mat.concrete, f.x + f.dir * 1.5, ROAD_Y + 1.5, s * 6.6);
+        const wing = box(4.6, 4.0, 1.0, mat.concrete, f.x + f.dir * 1.5, ROAD_Y + 1.5, s * 7.0);
         wing.rotation.y = s * f.dir * 0.42;
         p.add(wing);
       }

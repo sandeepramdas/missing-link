@@ -227,7 +227,7 @@ export class SceneDirector {
       const localT = clamp01((this.t - t0) / (t1 - t0));
       this.rig.sample(active.cameraTrack, localT);
       this.grade(active.id, dt);
-      this.pushHUD(active.id);
+      this.pushHUD(active.id, localT);
     }
 
     this.rig.tick(dt);
@@ -256,10 +256,16 @@ export class SceneDirector {
     this.fog.color.lerp(_c2, k);
   }
 
-  private pushHUD(sectionId: string): void {
+  private pushHUD(sectionId: string, localT = 0): void {
     const buildStart = this.sections.find((s) => s.id === BUILD_START_ID)?.range[0] ?? 0.15;
     const buildEnd = this.sections.find((s) => s.id === BUILD_END_ID)?.range[1] ?? 0.92;
     const pb = clamp01((this.t - buildStart) / (buildEnd - buildStart));
+    // During construction, chainage tracks percent-built. In the finale the
+    // corridor is complete and the camera RIDES it end-to-end — so chainage
+    // travels CH 0+000 → 13+300 again with the journey (holding complete
+    // once the merge is reached, through the golden hero).
+    const chainage =
+      sectionId === 'S12' ? TOTAL_CH_M * clamp01(localT / 0.74) : pb * TOTAL_CH_M;
     // Corporate hand-off: the canvas NEVER dims (the golden hero must hold
     // full strength to the last pixel) — #corporate simply scrolls over it.
     // Only the HUD chrome fades, right at the very end.
@@ -268,7 +274,7 @@ export class SceneDirector {
       t: this.t,
       sectionId,
       percentBuilt: Math.round(pb * 100),
-      chainage_m: pb * TOTAL_CH_M,
+      chainage_m: chainage,
       velocity: this.scroll.velocity,
       webglFade: fade,
     });

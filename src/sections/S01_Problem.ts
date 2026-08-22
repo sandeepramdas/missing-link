@@ -7,6 +7,7 @@ import {
   BufferGeometry,
   CatmullRomCurve3,
   Group,
+  InstancedMesh,
   Line,
   LineBasicMaterial,
   TubeGeometry,
@@ -15,16 +16,17 @@ import {
   MeshBasicMaterial,
 } from 'three';
 import type { BuildCtx, Section } from './types';
-import { GEO, makeInstanced } from './helpers';
-import { mat } from '../materials/greybox';
 import { heightAt } from '../world/Terrain';
+import { makeVehicleMesh } from '../world/Vehicles';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { window01, easeOutCubic } from '../utils/scratch';
 
 let ghatMat: MeshBasicMaterial;
 let ghatLineMat: LineBasicMaterial;
-let vehicles: ReturnType<typeof makeInstanced>;
-let vehicleSlots: InstanceSlot[] = [];
+let convoyCars: InstancedMesh;
+let convoyTrucks: InstancedMesh;
+let carSlots: InstanceSlot[] = [];
+let truckSlots: InstanceSlot[] = [];
 let ghatCurve: CatmullRomCurve3;
 
 export const S01_Problem: Section = {
@@ -64,26 +66,28 @@ export const S01_Problem: Section = {
     line.position.y = 0.6;
     g.add(line);
 
-    // stalled convoy along the curve — seated on the surface AND yawed to
-    // the road direction (axis-aligned boxes on switchbacks read as random
-    // crates, not queued traffic)
-    vehicleSlots = [];
+    // stalled convoy along the curve — REAL low-poly vehicles (cars/trucks),
+    // seated on the surface and yawed to the road direction
+    carSlots = [];
+    truckSlots = [];
     for (let i = 0; i < 26; i++) {
       const ct = 0.25 + (i / 26) * 0.5;
       const p = ghatCurve.getPoint(ct);
       const tan = ghatCurve.getTangent(ct);
-      vehicleSlots.push({
+      const slot: InstanceSlot = {
         x: p.x,
-        y: heightAt(p.x, p.z) + 1.35,
+        y: heightAt(p.x, p.z) + 0.75,
         z: p.z,
-        sx: 2.6, sy: 1.1, sz: 1.2,
+        sx: 1, sy: 1, sz: 1,
         ry: Math.atan2(-tan.z, tan.x),
         order: i / 25,
-      });
+      };
+      if (i % 3 === 0) truckSlots.push(slot);
+      else carSlots.push(slot);
     }
-    // steel grey, NOT orange — same-hue vehicles disappear into the road ribbon
-    vehicles = makeInstanced(GEO.unitBox, mat.steel, vehicleSlots);
-    g.add(vehicles);
+    convoyCars = makeVehicleMesh('car', carSlots.length, 5);
+    convoyTrucks = makeVehicleMesh('truck', truckSlots.length, 17);
+    g.add(convoyCars, convoyTrucks);
 
     // rockfall + rain emitters (scrub-driven)
     const rockAt = ghatCurve.getPoint(0.45);
@@ -96,7 +100,9 @@ export const S01_Problem: Section = {
     // draw on, then desaturate/hand off completely before S2's reveal
     ghatMat.opacity = 0.85 * easeOutCubic(window01(localT, 0.05, 0.3)) * (1 - window01(localT, 0.85, 1));
     ghatLineMat.opacity = ghatMat.opacity;
-    revealInstances(vehicles, vehicleSlots, window01(localT, 0.2, 0.55), { spread: 0.3 });
+    const convoyK = window01(localT, 0.2, 0.55);
+    revealInstances(convoyCars, carSlots, convoyK, { spread: 0.3 });
+    revealInstances(convoyTrucks, truckSlots, convoyK, { spread: 0.3 });
     ctx.particles.scrub('s1_rockfall', window01(localT, 0.45, 0.75));
     ctx.particles.scrub('s1_rain', window01(localT, 0.1, 0.9));
   },
