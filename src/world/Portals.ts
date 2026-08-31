@@ -36,13 +36,18 @@ import { PALETTE } from '../materials/greybox';
 interface PortalFace {
   x: number;
   dir: 1 | -1; // outward direction along X
+  /** how far the wall stands proud of the analytic face. The approach faces
+   *  sit in carved corridors, 2 is plenty; the GORGE faces must clear a full
+   *  terrain-mesh cell (~6.5 units) of the wall→bench interpolation ramp or
+   *  the wall renders inside the slope. */
+  out: number;
 }
 
 const FACES: PortalFace[] = [
-  { x: TUNNEL_SHORT.x0, dir: -1 }, // Khalapur end
-  { x: TUNNEL_SHORT.x1, dir: 1 }, // short tunnel → gorge
-  { x: TUNNEL_LONG.x0, dir: -1 }, // gorge → long tunnel
-  { x: TUNNEL_LONG.x1, dir: 1 }, // Kusgaon end
+  { x: TUNNEL_SHORT.x0, dir: -1, out: 2.0 }, // Khalapur end
+  { x: TUNNEL_SHORT.x1, dir: 1, out: 5.0 }, // short tunnel → gorge
+  { x: TUNNEL_LONG.x0, dir: -1, out: 5.0 }, // gorge → long tunnel
+  { x: TUNNEL_LONG.x1, dir: 1, out: 2.0 }, // Kusgaon end
 ];
 
 const ARCH_R = 1.55; // opening radius
@@ -92,35 +97,41 @@ export class Portalworks {
 
       // arched face wall, stood PROUD of the terrain skin (buried walls show
       // only their crown through the slope); wings cover the seam behind
-      const OUT = 2.0;
+      const wx = f.x + f.dir * f.out; // wall plane x — everything hangs off it
       const face = new Mesh(faceGeo, faceMat);
       face.rotation.y = f.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
-      face.position.set(f.x + f.dir * OUT, ROAD_Y + 0.02, 0);
+      face.position.set(wx, ROAD_Y + 0.02, 0);
       p.add(face);
+
+      // gorge faces stand on the carved bench, whose skin undulates around
+      // deck level — a foundation plinth seals any daylight under the wall
+      if (f.out > 2) {
+        p.add(box(1.6, 4.4, 12.4, mat.concrete, wx + f.dir * 0.6, ROAD_Y - 2.1, 0));
+      }
 
       for (const zc of [TUBE_OFFSET_Z, -TUBE_OFFSET_Z]) {
         // projecting canopy hood over the bore
         const hood = new Mesh(hoodGeo, hoodMat);
         hood.rotation.z = Math.PI / 2; // cylinder axis → X
         hood.rotation.y = f.dir > 0 ? 0 : Math.PI;
-        hood.position.set(f.x + f.dir * (OUT + 1.9), ROAD_Y + SPRING + 0.02, zc);
+        hood.position.set(wx + f.dir * 1.9, ROAD_Y + SPRING + 0.02, zc);
         p.add(hood);
         // dark bore depth just inside the opening
         const cap = new Mesh(boreCap, boreMat);
-        cap.position.set(f.x + f.dir * (OUT - 2.6), ROAD_Y + SPRING + 0.3, zc);
+        cap.position.set(wx - f.dir * 0.6, ROAD_Y + SPRING + 0.3, zc);
         cap.rotation.y = f.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
         p.add(cap);
       }
 
       // wing walls easing the cut into the slope — tucked against the face
       for (const s of [1, -1]) {
-        const wing = box(4.6, 4.0, 1.0, mat.concrete, f.x + f.dir * 1.5, ROAD_Y + 1.5, s * 7.0);
+        const wing = box(4.6, 4.0, 1.0, mat.concrete, wx - f.dir * 0.5, ROAD_Y + 1.5, s * 7.0);
         wing.rotation.y = s * f.dir * 0.42;
         p.add(wing);
       }
       // road stub through the portal — same width AND deck height as the
       // S11 surfacing and the tie-ins, so there is no kink or step at joins
-      p.add(box(11, 0.24, 5.2, mat.asphalt, f.x + f.dir * 4.5, ROAD_Y + 0.5, 0));
+      p.add(box(11, 0.24, 5.2, mat.asphalt, wx + f.dir * 2.5, ROAD_Y + 0.5, 0));
       p.scale.y = 1e-3;
       p.visible = false;
       this.group.add(p);

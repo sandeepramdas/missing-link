@@ -86,9 +86,22 @@ export const projectData = {
 
   viaducts: {
     count: fact(2, false, '⟨VERIFY⟩'),
-    viaduct1_m: fact(790, false, '⟨VERIFY⟩'),
-    viaduct2_m: fact(650, false, '⟨VERIFY cable-stayed⟩'),
-    pylonHeight_m: fact(182, false, "⟨VERIFY 'tallest pylon'⟩"),
+    /** BOTH viaducts are cable-stayed — press reports "two cable-stayed
+     *  bridges" (lengths reported variously as 770/790 m and 645/650 m). */
+    cableStayedCount: fact(
+      2,
+      false,
+      '⟨VERIFY — two cable-stayed bridges, ~770 m & ~645 m reported⟩',
+      'https://www.constructionworld.in/transport-infrastructure/highways-and-roads-infrastructure/afcons---navayuga-set-world-records-with-missing-link-expressway/90926'
+    ),
+    viaduct1_m: fact(790, false, '⟨VERIFY 770/790 — cable-stayed⟩'),
+    viaduct2_m: fact(650, false, '⟨VERIFY 645/650 — cable-stayed⟩'),
+    pylonHeight_m: fact(
+      182,
+      false,
+      "⟨VERIFY 181.77 m diamond-shaped pylon — 'tallest on any Indian road bridge'⟩",
+      'https://www.doka.com/en/news/press/missing-link-india'
+    ),
     deckHeight_m: fact('100+', false, '⟨VERIFY⟩'),
     method: fact('Balanced cantilever + form travelers + stay cables', false),
   },

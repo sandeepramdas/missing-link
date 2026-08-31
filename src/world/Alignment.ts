@@ -28,7 +28,7 @@ export interface Span {
 export const SPANS: Span[] = [
   { kind: 'approach', name: 'Khalapur approach', x0: 0, x1: 30 },
   { kind: 'tunnel', name: 'Short tunnel (1.75 km)', x0: 30, x1: 205 },
-  { kind: 'viaduct', name: 'Viaduct 1 (790 m)', x0: 205, x1: 284 },
+  { kind: 'viaduct', name: 'Viaduct 1 — cable-stayed (790 m)', x0: 205, x1: 284 },
   { kind: 'viaduct', name: 'Viaduct 2 — cable-stayed (650 m)', x0: 284, x1: 349 },
   { kind: 'tunnel', name: 'Long tunnel (8.92 km)', x0: 349, x1: 1241 },
   { kind: 'approach', name: 'Kusgaon approach', x0: 1241, x1: 1330 },

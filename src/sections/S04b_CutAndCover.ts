@@ -6,6 +6,7 @@
 import { Group, Mesh, MeshLambertMaterial } from 'three';
 import type { BuildCtx, Section } from './types';
 import { GEO, box, makeInstanced, mat } from './helpers';
+import { girderSegmentGeometry, makeGantryCrane, equipMat } from '../world/Equipment';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { ROAD_Y } from '../world/Alignment';
 import { window01, easeOutCubic, easeOutBackSoft } from '../utils/scratch';
@@ -24,9 +25,15 @@ export const S04b_CutAndCover: Section = {
   title: 'Cut and Cover',
   range: [0, 0],
   cameraTrack: [
-    { t: 0, pos: [4, 12.4, 2.2], look: [30, 9.5, 2.2], fov: 34 },
-    { t: 0.25, pos: [-20, 32, 42], look: [CX, 8, 0], fov: 50 },
-    { t: 0.65, pos: [-4, 22, 30], look: [CX + 2, 8, 0], fov: 46, calm: true },
+    // the works sit at the FOOT of the ~450 m short-tunnel mesa, so any
+    // ground-level key looking east fills the frame with its rock wall (the
+    // old opening key even sat at the portal mouth looking into the bore).
+    // Stay HIGH south-west — same altitude recipe as S4's keys — so the
+    // ridge line stays inside frame and the trench reads front-and-center.
+    // The rig's damping bridges the jump from S4's exit pose on its own.
+    { t: 0, pos: [-56, 52, 86], look: [CX - 4, 8, 2], fov: 46 },
+    { t: 0.35, pos: [-40, 46, 66], look: [CX, 8, 0], fov: 44 },
+    { t: 0.7, pos: [-26, 42, 50], look: [CX + 2, 8, 0], fov: 40, calm: true },
     // pan west to the casting yard on the staging plain (the old key crossed
     // the massif shoulder 110 m underground)
     { t: 1, pos: [-46, 28, 62], look: [-82, 9, 15], fov: 50 },
@@ -54,27 +61,24 @@ export const S04b_CutAndCover: Section = {
     g.add(embankment);
 
     // casting yard for viaduct segments — on the FLAT Khalapur staging plain
-    // beside the toll road (the old spot on the gorge rim floated in mid-air)
+    // beside the toll road (the old spot on the gorge rim floated in mid-air).
+    // Real precast box-girder segments: top slab + wings, inclined webs.
     yardSlots = [];
     for (let i = 0; i < 12; i++) {
       yardSlots.push({
         x: -92 + (i % 4) * 8,
-        y: ROAD_Y + 1.55,
+        y: ROAD_Y + 0.35,
         z: 11 + Math.floor(i / 4) * 6.5,
-        sx: 6, sy: 2.4, sz: 3,
+        sx: 1, sy: 1, sz: 1,
         order: i / 11,
       });
     }
-    yardSegs = makeInstanced(GEO.unitBox, mat.concrete, yardSlots);
-    // a REAL portal gantry crane: legs + top beam + hoist straddling the rows
-    // (the previous single box read as a giant orange wall)
-    gantry = new Group();
-    gantry.add(
-      box(0.5, 0.5, 13, mat.machine, -78, ROAD_Y + 3.0, 14.2),
-      box(0.4, 2.9, 0.4, mat.steel, -78, ROAD_Y + 1.55, 8.2),
-      box(0.4, 2.9, 0.4, mat.steel, -78, ROAD_Y + 1.55, 20.2),
-      box(0.7, 0.9, 0.7, mat.steel, -78, ROAD_Y + 2.4, 14.2)
-    );
+    yardSegs = makeInstanced(GEO.unitBox, equipMat, yardSlots);
+    yardSegs.geometry = girderSegmentGeometry();
+    // rail-mounted portal gantry crane straddling the rows: A-frame legs on
+    // bogies, main girder, hoist trolley with rope + hook
+    gantry = makeGantryCrane(6.2, 4.4);
+    gantry.position.set(-78, ROAD_Y + 0.35, 14.2);
     gantry.scale.y = 1e-3;
     gantry.visible = false;
     const yard = new Group();

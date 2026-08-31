@@ -2,13 +2,14 @@
  * S12 — Finale: full end-to-end journey with a real low-poly vehicle fleet
  * (cars/trucks/buses, three instanced draw calls) flowing across the existing
  * expressway, through the corridor and over the bridge; golden-hour → dusk
- * with the lit pylon. Status-conditional copy is handled by the HUD — this
+ * with the lit pylons. Status-conditional copy is handled by the HUD — this
  * scene never claims an inauguration.
  */
 import { Group, InstancedMesh, Mesh, MeshBasicMaterial, PointLight } from 'three';
 import type { BuildCtx, Section } from './types';
 import { box } from './helpers';
-import { ROAD_Y, TUBE_OFFSET_Z, X_END } from '../world/Alignment';
+import { ROAD_Y, TUBE_OFFSET_Z, VALLEY_FLOOR_Y, X_END } from '../world/Alignment';
+import { BRIDGES } from './S09_Pylon';
 import { makeVehicleMesh, type VehicleType } from '../world/Vehicles';
 import { window01 } from '../utils/scratch';
 import { PALETTE } from '../materials/greybox';
@@ -16,7 +17,6 @@ import { _m1, _v1, _q1, _e1 } from '../utils/scratch';
 import { Vector3 } from 'three';
 
 const N_VEHICLES = 84;
-const PYLON_X = 316.5;
 const TRAFFIC_X0 = -95;
 const TRAFFIC_X1 = X_END + 160;
 
@@ -29,7 +29,7 @@ let speeds: Float32Array;
 let offsets: Float32Array;
 let lanes: Float32Array;
 let roll = 0;
-let pylonBeacon: Mesh;
+let pylonBeacons: Mesh[] = [];
 let pylonLight: PointLight;
 const SCALE = new Vector3(1, 1, 1);
 
@@ -44,11 +44,11 @@ export const S12_Finale: Section = {
     { t: 0, pos: [-72, 30, 78], look: [-10, 9, 0], fov: 52 }, // Khalapur toll plaza + portal
     { t: 0.16, pos: [-52, 24, 16], look: [31, 10, 0], fov: 46 }, // near-frontal: twin mouths + road in
     { t: 0.27, pos: [110, 78, 118], look: [270, 10, 0], fov: 54 }, // hop OVER the short-tunnel massif
-    { t: 0.38, pos: [PYLON_X - 65, 30, 92], look: [PYLON_X + 36, 12, 0], fov: 56 }, // the bridge
+    { t: 0.38, pos: [BRIDGES[0].x - 60, 30, 92], look: [BRIDGES[1].x + 20, 12, 0], fov: 56 }, // both crossings
     { t: 0.48, pos: [760, 92, 160], look: [1000, 14, 0], fov: 55 }, // aerial sweep OVER the massif (never through it)
     { t: 0.58, pos: [1266, 26, 26], look: [1238, 10, 0], fov: 48 }, // exit portal, Kusgaon end
     { t: 0.74, pos: [1315, 42, 130], look: [1250, 11, 0], fov: 52, calm: true }, // merge to the expressway
-    { t: 1, pos: [490, 95, 250], look: [PYLON_X + 4, 13, 0], fov: 58, calm: true }, // golden hero
+    { t: 1, pos: [490, 95, 250], look: [(BRIDGES[0].x + BRIDGES[1].x) / 2 + 4, 13, 0], fov: 58, calm: true }, // golden hero
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();
@@ -80,11 +80,21 @@ export const S12_Finale: Section = {
     }
     void TUBE_OFFSET_Z;
 
-    pylonBeacon = box(0.6, 0.6, 0.6, new MeshBasicMaterial({ color: PALETTE.sodiumAmber }), PYLON_X, 14.8, 0);
-    pylonBeacon.visible = false; // zero state — lit only during the finale dusk
-    pylonLight = new PointLight(PALETTE.sodiumAmber, 0, 200, 1.2);
-    pylonLight.position.set(PYLON_X, 15, 0);
-    g.add(pylonBeacon, pylonLight);
+    // aviation beacons atop BOTH pylons; one shared point light between them
+    // (a light per pylon doubles the lighting cost for no visible gain)
+    pylonBeacons = BRIDGES.map((b) => {
+      const beacon = box(
+        0.6, 0.6, 0.6,
+        new MeshBasicMaterial({ color: PALETTE.sodiumAmber }),
+        b.x, VALLEY_FLOOR_Y + b.h + 0.3, 0
+      );
+      beacon.visible = false; // zero state — lit only during the finale dusk
+      g.add(beacon);
+      return beacon;
+    });
+    pylonLight = new PointLight(PALETTE.sodiumAmber, 0, 220, 1.2);
+    pylonLight.position.set((BRIDGES[0].x + BRIDGES[1].x) / 2, 16, 0);
+    g.add(pylonLight);
     return g;
   },
   update(localT, dt, _ctx): void {
@@ -104,12 +114,14 @@ export const S12_Finale: Section = {
       fleet[t].count = Math.floor(FLEET_CAPS[t] * grow);
       fleet[t].instanceMatrix.needsUpdate = true;
     }
-    // pylon lights up as dusk falls in the last third
+    // pylons light up as dusk falls in the last third
     const dusk = window01(localT, 0.6, 0.95);
-    pylonBeacon.visible = dusk > 0.02;
     pylonLight.intensity = 60 * dusk;
-    (pylonBeacon.material as MeshBasicMaterial).color.setHex(
-      dusk > 0.05 ? PALETTE.sodiumAmber : 0x555555
-    );
+    for (const beacon of pylonBeacons) {
+      beacon.visible = dusk > 0.02;
+      (beacon.material as MeshBasicMaterial).color.setHex(
+        dusk > 0.05 ? PALETTE.sodiumAmber : 0x555555
+      );
+    }
   },
 };

@@ -6,6 +6,13 @@ import { Group, Mesh, MeshBasicMaterial, PlaneGeometry, DoubleSide } from 'three
 import type { BuildCtx, Section } from './types';
 import { GEO, makeInstanced, lineSlots } from './helpers';
 import { mat } from '../materials/greybox';
+import {
+  drillRigGeometry,
+  surveyMarkerGeometry,
+  equipMat,
+  equipGlowMat,
+  RIG_MAST_X,
+} from '../world/Equipment';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { heightAt } from '../world/Terrain';
 import { window01, easeOutCubic } from '../utils/scratch';
@@ -31,26 +38,32 @@ export const S03_Geotech: Section = {
   ],
   build(_ctx: BuildCtx): Group {
     const g = new Group();
-    // rigs on the ridge above the long tunnel
+    // rigs on the ridge above the long tunnel — real crawler drill rigs
+    // (tracks + cab + mast), authored ground-based so they grow out of the
+    // ridge; the spinning drill string threads the mast at RIG_MAST_X
     rigSlots = [];
     drillSlots = [];
     for (let i = 0; i < 7; i++) {
       const x = 400 + i * 60;
       const y = heightAt(x, 0);
-      rigSlots.push({ x, y: y + 2.5, z: 0, sx: 2, sy: 5, sz: 2, order: i / 6 });
-      drillSlots.push({ x, y: y + 1, z: 0, sx: 0.5, sy: 6, sz: 0.5, order: i / 6 });
+      rigSlots.push({ x, y, z: 0, sx: 1, sy: 1, sz: 1, order: i / 6 });
+      drillSlots.push({ x: x + RIG_MAST_X, y: y + 2.6, z: 0, sx: 0.22, sy: 5.4, sz: 0.22, order: i / 6 });
     }
-    rigs = makeInstanced(GEO.unitBox, mat.machine, rigSlots);
+    rigs = makeInstanced(GEO.unitBox, equipMat, rigSlots);
+    rigs.geometry = drillRigGeometry();
     drills = makeInstanced(GEO.unitCyl, mat.steel, drillSlots);
     g.add(rigs, drills);
 
-    // survey markers along the whole alignment
-    markerSlots = lineSlots(24, 0, 1330, 0, 0, [0.6, 3, 0.6]).map((s, i) => ({
+    // survey markers along the whole alignment — ranging rods with target
+    // flags (unlit so they read at any light level)
+    markerSlots = lineSlots(24, 0, 1330, 0, 0, [1, 1, 1]).map((s, i) => ({
       ...s,
-      y: heightAt(s.x, 0) + 1.5, // ON the ground — gorge markers were pinned to road level, hovering 375 m up
+      y: heightAt(s.x, 0), // ON the ground — gorge markers were pinned to road level, hovering 375 m up
+      ry: ((i * 53) % 7) * 0.9, // varied flag facing
       order: i / 23,
     }));
-    markers = makeInstanced(GEO.unitBox, mat.orangeEmissive, markerSlots);
+    markers = makeInstanced(GEO.unitBox, equipGlowMat, markerSlots);
+    markers.geometry = surveyMarkerGeometry();
     g.add(markers);
 
     // strata cutaway — three translucent layers below the ridge

@@ -135,9 +135,9 @@ export const narrative: SceneCopy[] = [
   },
   {
     id: 'S09',
-    kicker: 'PYLON · BALANCED CANTILEVER · STAY CABLES',
-    title: 'The Pylon',
-    body: 'Form travelers push the deck out symmetrically over the gorge while stay cables install and tension, one by one.',
+    kicker: 'PYLONS · BALANCED CANTILEVER · STAY CABLES',
+    title: 'The Pylons',
+    body: 'Twin cable-stayed crossings rise from the gorge — form travelers push each deck out symmetrically while stay cables install and tension, one by one.',
     chip: 'Cable Stay',
     stats: [
       { label: 'Pylon height', path: 'viaducts.pylonHeight_m', format: '{v} m', countUp: true },
@@ -170,7 +170,7 @@ export const narrative: SceneCopy[] = [
     id: 'S12',
     kicker: 'THE CORRIDOR, COMPLETE',
     title: 'Ready for the Road Ahead',
-    body: 'Through the widest tunnels in the country, over the gorge, past the lit pylon — the Missing Link stands ready.',
+    body: 'Through the widest tunnels in the country, over the gorge, past the lit pylons — the Missing Link stands ready.',
     chip: 'Opening',
     stats: [
       { label: 'New alignment', path: 'overview.totalLength_km', format: '{v} km', countUp: true },

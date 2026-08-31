@@ -6,6 +6,7 @@
 import { Group, Mesh, MeshLambertMaterial, PointLight } from 'three';
 import type { BuildCtx, Section } from './types';
 import { GEO, box, makeInstanced, mat } from './helpers';
+import { excavatorGeometry, equipMat } from '../world/Equipment';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { ROAD_Y, TUNNEL_SHORT, TUBE_OFFSET_Z } from '../world/Alignment';
 import { window01, easeOutCubic, clamp01 } from '../utils/scratch';
@@ -41,12 +42,15 @@ export const S04_Portals: Section = {
       benches.push(b);
       g.add(b);
     }
+    // real tracked excavators (tracks/cab/boom/bucket), yawed to work the
+    // bench face — authored ground-based, so slots sit ON the bench floor
     excSlots = [
-      { x: PX - 8, y: ROAD_Y + 1.2, z: 5, sx: 3.4, sy: 2.2, sz: 2, ry: 0.5 },
-      { x: PX - 14, y: ROAD_Y + 1.2, z: -6, sx: 3.4, sy: 2.2, sz: 2, ry: -0.8 },
-      { x: PX - 20, y: ROAD_Y + 1.2, z: 1, sx: 4.2, sy: 2, sz: 2.2, ry: Math.PI },
+      { x: PX - 8, y: ROAD_Y, z: 5, sx: 1, sy: 1, sz: 1, ry: 0.5 },
+      { x: PX - 14, y: ROAD_Y, z: -6, sx: 1, sy: 1, sz: 1, ry: -0.8 },
+      { x: PX - 20, y: ROAD_Y, z: 1, sx: 1.15, sy: 1.15, sz: 1.15, ry: Math.PI },
     ];
-    excavators = makeInstanced(GEO.unitBox, mat.machine, excSlots);
+    excavators = makeInstanced(GEO.unitBox, equipMat, excSlots);
+    excavators.geometry = excavatorGeometry();
     g.add(excavators);
 
     // slope stabilization bolts above the portal, within the cut face

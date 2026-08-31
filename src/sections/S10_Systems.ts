@@ -6,7 +6,8 @@
  */
 import { Group, InstancedMesh, Mesh, MeshBasicMaterial, PointLight } from 'three';
 import type { BuildCtx, Section } from './types';
-import { GEO, box, cyl, makeInstanced, makeStringLights, makeTubeShell, mat } from './helpers';
+import { GEO, box, makeInstanced, makeStringLights, makeTubeShell, mat } from './helpers';
+import { jetFanShroudGeometry, jetFanRotorGeometry, equipMat } from '../world/Equipment';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { ROAD_Y, TUBE_OFFSET_Z } from '../world/Alignment';
 import { window01, clamp01, _c1 } from '../utils/scratch';
@@ -15,7 +16,7 @@ import { PALETTE } from '../materials/greybox';
 const Z = TUBE_OFFSET_Z;
 const X0 = 480;
 const X1 = 640;
-let fans: Mesh[] = [];
+let fans: Group[] = [];
 let lamps: InstancedMesh;
 let lampSlots: InstanceSlot[] = [];
 let lampMat: MeshBasicMaterial;
@@ -40,17 +41,20 @@ export const S10_Systems: Section = {
     const g = new Group();
     g.add(makeTubeShell(X0 - 30, X1 + 60, Z));
 
-    // paired jet fans at intervals near the crown. Euler order ZYX: tip the
-    // axis to X (z) AFTER spinning about the fan's own axis (y) — the default
-    // order made them precess instead of spin. Dimensions animate as
-    // multipliers of the stored base, never setScalar.
+    // paired jet fans at intervals near the crown — silencer shroud with end
+    // rings (static) + bladed rotor child that spins about the fan's OWN
+    // axis (child local Y, before the group's z-tip to horizontal). Geometry
+    // is authored at world scale, so the mount animation is a uniform scale.
     fans = [];
+    const shroudGeo = jetFanShroudGeometry();
+    const rotorGeo = jetFanRotorGeometry();
     for (let x = X0 + 14; x < X1; x += 40) {
       for (const dz of [-0.7, 0.7]) {
-        const f = cyl(0.45, 2.2, mat.steel, x, ROAD_Y + 2.05, Z + dz);
-        f.rotation.order = 'ZYX';
+        const f = new Group();
+        f.add(new Mesh(shroudGeo, equipMat), new Mesh(rotorGeo, equipMat));
+        f.position.set(x, ROAD_Y + 2.05, Z + dz);
         f.rotation.z = Math.PI / 2;
-        f.scale.multiplyScalar(1e-3);
+        f.scale.setScalar(1e-3);
         fans.push(f);
         g.add(f);
       }
@@ -109,13 +113,13 @@ export const S10_Systems: Section = {
     return g;
   },
   update(localT, dt, ctx): void {
-    // fans mount 5–30%, then spin up about their OWN axis
+    // fans mount 5–30%, then the rotor (child 1) spins about the fan axis
     const mountK = window01(localT, 0.05, 0.3);
     fanSpin += dt * (2 + 18 * window01(localT, 0.3, 0.6));
     for (let i = 0; i < fans.length; i++) {
       const own = Math.max(1e-3, clamp01(mountK * fans.length - i));
-      fans[i].scale.set(0.9 * own, 2.2 * own, 0.9 * own); // base dims × multiplier
-      fans[i].rotation.y = fanSpin;
+      fans[i].scale.setScalar(own); // world-scale geometry: uniform mount-in
+      fans[i].children[1].rotation.y = fanSpin;
     }
     // lamp cascade 35–65%: a REAL cascade — each lamp switches on via its own
     // instance colour (a shared-material setHex flipped the whole run at once)

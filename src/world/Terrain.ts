@@ -49,6 +49,12 @@ const X_MIN = -150;
 /** Lake basin centre over the long tunnel (Lonavala/Tungarli region ⟨VERIFY⟩). */
 export const LAKE = { x: 700, z: -90, r: 48, y: ROAD_Y + 42 };
 
+/** The two tunnel faces that meet the gorge: [face x, outward dir into gorge]. */
+const GORGE_PORTAL_CUTS: [number, 1 | -1][] = [
+  [TUNNEL_SHORT.x1, 1],
+  [TUNNEL_LONG.x0, -1],
+];
+
 function massifProfile(x: number): number {
   // mesa profile (flat top, steep flanks) over each tunnel span — keeps the
   // rock face TALL right at every portal so tunnel mouths meet real mountain
@@ -81,6 +87,24 @@ export function heightAt(x: number, z: number): number {
   if (gk > 0) {
     const floor = VALLEY_FLOOR_Y + Math.abs(z) * 0.09 + fbm2(x * 0.05, z * 0.05, 2) * 1.5;
     h = h * (1 - gk) + floor * gk;
+  }
+
+  // ── portal cuttings at the two mid-gorge tunnel faces ────────────────
+  // The wall→floor blend above runs 14 units, so a couple of units out
+  // from each face the skin is still ~90% of full massif height — both
+  // mid-gorge portals sat completely buried inside the slope. Carve a
+  // deck-level bench through the blend zone (gorge side only — never into
+  // the massif, the tunnel crown skin must stay) so each mouth meets a
+  // steep cut face, like the carved approach corridors.
+  for (const [fx, dir] of GORGE_PORTAL_CUTS) {
+    const along = (x - fx) * dir; // >0 into the gorge
+    if (along > -0.5 && along < 16 && Math.abs(z) < 15) {
+      const k =
+        smoothstep(clamp01((along + 0.5) / 1.5)) *
+        smoothstep(clamp01((16 - along) / 6)) *
+        smoothstep(clamp01((15 - Math.abs(z)) / 5));
+      h = h * (1 - k) + Math.min(h, ROAD_Y + 0.35) * k;
+    }
   }
 
   // Lake basin flattens into a bowl

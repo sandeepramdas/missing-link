@@ -5,6 +5,7 @@
 import { Group, InstancedMesh, Mesh } from 'three';
 import type { BuildCtx, Section } from './types';
 import { GEO, box, makeInstanced, mat } from './helpers';
+import { signGeometry, equipGlowMat } from '../world/Equipment';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { ROAD_Y, SPANS } from '../world/Alignment';
 import { window01, easeInOutQuad } from '../utils/scratch';
@@ -62,14 +63,16 @@ export const S11_Surfacing: Section = {
       }
     }
     barriers = makeInstanced(GEO.unitBox, mat.concrete, barrierSlots);
-    // roadside sign boards at the deck edge (a floating overhead beam with
-    // no posts read as an orange stick hovering over the road)
+    // roadside signboards at the deck edge — twin posts + green board with
+    // legend bars, unlit so they read at dusk. Base-at-origin geometry:
+    // slots sit ON the finished asphalt (deck top ≈ ROAD_Y + 0.62)
     signSlots = [
-      { x: 216, y: ROAD_Y + 1.55, z: 3.1, sx: 0.14, sy: 1.05, sz: 1.9, order: 0 },
-      { x: 300, y: ROAD_Y + 1.55, z: -3.1, sx: 0.14, sy: 1.05, sz: 1.9, order: 0.5 },
-      { x: 344, y: ROAD_Y + 1.55, z: 3.1, sx: 0.14, sy: 1.05, sz: 1.9, order: 1 },
+      { x: 216, y: ROAD_Y + 0.62, z: 3.1, sx: 1, sy: 1, sz: 1, order: 0 },
+      { x: 300, y: ROAD_Y + 0.62, z: -3.1, sx: 1, sy: 1, sz: 1, ry: Math.PI, order: 0.5 },
+      { x: 344, y: ROAD_Y + 0.62, z: 3.1, sx: 1, sy: 1, sz: 1, order: 1 },
     ];
-    signs = makeInstanced(GEO.unitBox, mat.machine, signSlots);
+    signs = makeInstanced(GEO.unitBox, equipGlowMat, signSlots);
+    signs.geometry = signGeometry();
     g.add(dashes, barriers, signs);
     return g;
   },

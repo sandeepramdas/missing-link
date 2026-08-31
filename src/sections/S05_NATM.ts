@@ -6,7 +6,14 @@
  */
 import { BackSide, Group, Mesh, MeshLambertMaterial, PointLight, CylinderGeometry } from 'three';
 import type { BuildCtx, Section } from './types';
-import { GEO, box, makeInstanced, makeTubeShell, makeStringLights, mat, crownSlots } from './helpers';
+import { GEO, makeInstanced, makeTubeShell, makeStringLights, mat, crownSlots } from './helpers';
+import {
+  jumboCarrierGeometry,
+  jumboBoomGeometry,
+  wheelLoaderGeometry,
+  dumpTruckGeometry,
+  equipMat,
+} from '../world/Equipment';
 import { revealInstances, type InstanceSlot } from '../utils/instanceReveal';
 import { ROAD_Y, TUBE_OFFSET_Z, TUNNEL_LONG } from '../world/Alignment';
 import { hudStore } from '../core/HUDBridge';
@@ -68,17 +75,27 @@ export const S05_NATM: Section = {
     face.position.set(faceX(0), ROAD_Y + 0.9, Z);
     stage.add(face);
 
-    // drill jumbo: chassis + two booms
+    // drill jumbo: wheeled carrier + two feed booms aimed at the face,
+    // splayed to cover the drill pattern
     jumbo = new Group();
-    const chassis = box(2.4, 0.95, 1.2, mat.machine, 0, 0.55, 0);
-    const boomL = box(2.2, 0.18, 0.18, mat.steel, 1.9, 1.05, 0.35);
-    const boomR = box(2.2, 0.18, 0.18, mat.steel, 1.9, 0.8, -0.35);
-    jumbo.add(chassis, boomL, boomR);
+    const carrier = new Mesh(jumboCarrierGeometry(), equipMat);
+    const boomGeo = jumboBoomGeometry();
+    const boomL = new Mesh(boomGeo, equipMat);
+    boomL.position.set(1.1, 0.95, 0.3);
+    boomL.rotation.y = 0.09;
+    const boomR = new Mesh(boomGeo, equipMat);
+    boomR.position.set(1.1, 0.95, -0.3);
+    boomR.rotation.y = -0.09;
+    boomR.rotation.z = 0.06; // one drifter slightly raised — mid-pattern
+    jumbo.add(carrier, boomL, boomR);
     jumbo.position.set(faceX(0) - 6, ROAD_Y, Z);
     stage.add(jumbo);
 
-    loader = box(1.9, 0.85, 1.05, mat.machine, faceX(0) - 12, ROAD_Y + 0.45, Z - 0.75);
-    tipper = box(2.4, 1.0, 1.15, mat.steel, faceX(0) - 18, ROAD_Y + 0.52, Z - 0.85);
+    loader = new Mesh(wheelLoaderGeometry(), equipMat);
+    loader.position.set(faceX(0) - 12, ROAD_Y, Z - 0.75);
+    tipper = new Mesh(dumpTruckGeometry(), equipMat);
+    tipper.position.set(faceX(0) - 18, ROAD_Y, Z - 0.85);
+    tipper.rotation.y = Math.PI; // nose out of the tunnel, tipper at the loader
     muckPile = new Mesh(GEO.sphere, mat.rock);
     muckPile.scale.set(2.2, 1.0, 1.8);
     muckPile.position.set(faceX(0) - 2, ROAD_Y + 0.4, Z);
