@@ -23,6 +23,18 @@ npm run verify-gate    # audit bound facts without building
 QA switches: `?fallback` forces the static narrative; `?debug` exposes
 `window.__ml = { director, scroll }`.
 
+## Deploy
+
+`.github/workflows/deploy-pages.yml` publishes to GitHub Pages on every push to
+`main`. It runs **`npm run build:staging`**, not `npm run build` — the accuracy
+gate below still blocks production while bound facts are unverified, so the live
+site shows a visible `⟨VERIFY⟩` badge beside every unverified figure instead of
+presenting it as confirmed. Flip that one line to `npm run build` once all 25
+bound facts carry `verified:true` and a source URL.
+
+`vite.config.ts` sets `base: './'` so the bundle is path-agnostic and works from
+the Pages project subpath, from `vite preview`, and after a repo rename.
+
 ## The accuracy gate (do not remove)
 
 Every number on screen binds to `src/data/projectData.ts` via a fact path
